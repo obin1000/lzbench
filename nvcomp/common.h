@@ -29,50 +29,24 @@
 #pragma once
 
 #include "nvcomp.h"
+#include "nvcomp.hpp"
 
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
 #include <string>
 
-namespace nvcomp
-{
-
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
+#if defined(_WIN32)
+#include <time.h>
+using ssize_t = ptrdiff_t;
 #endif
 
-// returns nano-seconds
-inline uint64_t get_time(timespec start, timespec end)
-{
-  constexpr const uint64_t BILLION = 1000000000ULL;
-  const uint64_t elapsed_time
-      = BILLION * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-  return elapsed_time;
-}
+namespace nvcomp {
 
-// size in bytes, returns GB/s
-inline double gibs(struct timespec start, struct timespec end, size_t s)
-{
-  uint64_t t = get_time(start, end);
-  return (double)s / t * 1e9 / 1024 / 1024 / 1024;
-}
+namespace {
 
-// size in bytes, returns GB/s
-inline double gbs(struct timespec start, struct timespec end, size_t s)
-{
-  uint64_t t = get_time(start, end);
-  return (double)s / t;
-}
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
-namespace
-{
 template <typename T>
 T* align(T* const ptr, const size_t alignment)
 {
@@ -117,7 +91,40 @@ constexpr __host__ __device__ U roundUpTo(U const num, T const chunk)
   return roundUpDiv(num, chunk) * chunk;
 }
 
-} // namespace
+/**
+ * @brief Calculate the first aligned location after `ptr`.
+ *
+ * @tparam T Type such that the alignment requirement is satisfied.
+ * @param ptr Input pointer.
+ * @return The first pointer after `ptr` that satisfy the alignment requirement.
+ */
+template <typename T>
+constexpr __host__ __device__ T* roundUpToAlignment(void* ptr)
+{
+  return reinterpret_cast<T*>(
+      roundUpTo(reinterpret_cast<uintptr_t>(ptr), sizeof(T)));
+}
+
+template <typename T>
+constexpr __host__ __device__ const T* roundUpToAlignment(const void* ptr)
+{
+  return reinterpret_cast<const T*>(
+      roundUpTo(reinterpret_cast<uintptr_t>(ptr), sizeof(T)));
+}
+
+/**
+ * @brief Provide a type that is the larger of `U` and `T` in terms of size.
+ */
+template <typename U, typename T>
+struct make_larger
+{
+  typedef std::conditional_t<(sizeof(U) >= sizeof(T)), U, T> type;
+};
+
+template <typename U, typename T>
+using larger_t = typename make_larger<U, T>::type;
+
+} // namespace 
 
 __inline__ size_t sizeOfnvcompType(nvcompType_t type)
 {

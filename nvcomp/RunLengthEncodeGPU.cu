@@ -26,23 +26,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "CudaUtils.h"
 #include "RunLengthEncodeGPU.h"
 #include "TempSpaceBroker.h"
 #include "common.h"
-#include "CascadedCommon.h"
 #include "nvcomp.hpp"
 #include "type_macros.h"
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Weffc++"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-#include <cub/device/device_run_length_encode.cuh>
-#include <cub/device/device_scan.cuh>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+#include "nvcomp_cub.cuh"
 
 #include <cassert>
 #include <stdexcept>
@@ -367,19 +358,17 @@ size_t requiredWorkspaceSizeTyped(const size_t num)
   size_t* numPtr = nullptr;
 
   size_t workspaceSize = 0;
-  cudaError_t err = cub::DeviceRunLengthEncode::Encode(
-      nullptr,
-      workspaceSize,
-      inPtr,
-      valsPtr,
-      runsPtr,
-      numPtr,
-      static_cast<int>(num),
-      0);
-  if (err != cudaSuccess) {
-    throw std::runtime_error(
-        "Failed to get workspace size: " + std::to_string(err));
-  }
+  CudaUtils::check(
+      cub::DeviceRunLengthEncode::Encode(
+          nullptr,
+          workspaceSize,
+          inPtr,
+          valsPtr,
+          runsPtr,
+          numPtr,
+          static_cast<int>(num),
+          0),
+      "cub::DeviceRunLengthEncode::Encode() failed");
 
   workspaceSize = std::max(workspaceSize, downstreamWorkspaceSize<U>(num));
 
@@ -402,7 +391,7 @@ void compressInternal(
   const VALUE* const inTyped = static_cast<const VALUE*>(in);
 
   const size_t reqWorkspaceSize = RunLengthEncodeGPU::requiredWorkspaceSize(
-      num, getnvcompType<VALUE>(), getnvcompType<COUNT>());
+      num, TypeOf<VALUE>(), TypeOf<COUNT>());
   if (workspaceSize < reqWorkspaceSize) {
     throw std::runtime_error(
         "Invalid workspace size: " + std::to_string(workspaceSize)
@@ -413,20 +402,17 @@ void compressInternal(
   size_t alignedWorkspaceSize
       = workspaceSize - relativeEndOffset(workspace, alignedWorkspace);
 
-  cudaError_t err = cub::DeviceRunLengthEncode::Encode(
-      alignedWorkspace,
-      alignedWorkspaceSize,
-      inTyped,
-      outValuesTyped,
-      outCountsTyped,
-      numOutDevice,
-      static_cast<int>(num),
-      stream);
-  if (err != cudaSuccess) {
-    throw std::runtime_error(
-        "Failed to schedule cub::DeviceRunLengthEncode::Encode() kernel: "
-        + std::to_string(err));
-  }
+  CudaUtils::check(
+      cub::DeviceRunLengthEncode::Encode(
+          alignedWorkspace,
+          alignedWorkspaceSize,
+          inTyped,
+          outValuesTyped,
+          outCountsTyped,
+          numOutDevice,
+          static_cast<int>(num),
+          stream),
+      "cub::DeviceRunLengthEncode::Encode() failed");
 }
 
 template <typename VALUE, typename COUNT>
@@ -474,20 +460,14 @@ void compressDownstreamInternal(
   // get blocks sizes
   rleInitKernel<VALUE, COUNT, BLOCK_SIZE, GLOBAL_TILE_SIZE>
       <<<grid, block, 0, stream>>>(inTyped, numInDevice, blockSizes);
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    throw std::runtime_error(
-        "Failed to launch rleInitKernel: " + std::to_string(err));
-  }
+  CudaUtils::check_last_error("Failed to launch rleInitKernel");
 
   // get output locations
   size_t requiredSpace;
-  err = cub::DeviceScan::ExclusiveSum(
-      nullptr, requiredSpace, blockSizes, blockPrefix, grid.x + 1, stream);
-  if (err != cudaSuccess) {
-    throw std::runtime_error(
-        "Failed to query rleScanKernel: " + std::to_string(err));
-  }
+  CudaUtils::check(
+      cub::DeviceScan::ExclusiveSum(
+          nullptr, requiredSpace, blockSizes, blockPrefix, grid.x + 1, stream),
+      "cub::DeviceScan::Exclusive() failed");
 
   size_t scanWorkspaceSize
       = std::max(1024 * sizeof(COUNT), maxNum * sizeof(COUNT));
@@ -496,21 +476,15 @@ void compressDownstreamInternal(
         "Too little workspace: " + std::to_string(scanWorkspaceSize) + ", need "
         + std::to_string(requiredSpace));
   }
-
-  err = cub::DeviceScan::ExclusiveSum(
-      scanWorkspace,
-      scanWorkspaceSize,
-      blockSizes,
-      blockPrefix,
-      grid.x + 1,
-      stream);
-  if (err != cudaSuccess) {
-    throw std::runtime_error(
-        "Failed to launch rleScanKernel: " + std::to_string(err)
-        + ", with "
-          "grid.x = "
-        + std::to_string(grid.x + 1) + " items.");
-  }
+  CudaUtils::check(
+      cub::DeviceScan::ExclusiveSum(
+          scanWorkspace,
+          scanWorkspaceSize,
+          blockSizes,
+          blockPrefix,
+          grid.x + 1,
+          stream),
+      "cub::DeviceScanExclusiveSum() failed");
 
   // do actual compaction
   rleReduceKernel<VALUE, COUNT, BLOCK_SIZE, GLOBAL_TILE_SIZE>
@@ -522,21 +496,13 @@ void compressDownstreamInternal(
           outValuesTypedPtr,
           outCountsTypedPtr,
           numOutDevice);
-  err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    throw std::runtime_error(
-        "Failed to launch rleReduceKernel: " + std::to_string(err));
-  }
+  CudaUtils::check_last_error("Failed to launch rleReduceKernel");
 
   // fix gaps
   rleFinalizeKernel<COUNT, BLOCK_SIZE, GLOBAL_TILE_SIZE>
       <<<dim3(roundUpDiv(grid.x, block.x)), block, 0, stream>>>(
           outCountsTypedPtr, blockStart, blockPrefix, numInDevice);
-  err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    throw std::runtime_error(
-        "Failed to launch rleFinalizeKernel: " + std::to_string(err));
-  }
+  CudaUtils::check_last_error("Failed to launch rleFinalizeKernel");
 }
 
 } // namespace

@@ -30,6 +30,7 @@
 #define NVCOMP_H
 
 #include <cuda_runtime.h>
+#include "nvcomp/shared_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,18 +40,9 @@ extern "C" {
  * CONSTANTS ******************************************************************
  *****************************************************************************/
 
-#define NVCOMP_MAJOR_VERSION 1
+#define NVCOMP_MAJOR_VERSION 2
 #define NVCOMP_MINOR_VERSION 2
-#define NVCOMP_PATCH_VERSION 3
-
-typedef enum nvcompError_t
-{
-  nvcompSuccess = 0,
-  nvcompErrorInvalidValue = 10,
-  nvcompErrorNotSupported = 11,
-  nvcompErrorCudaError = 1000,
-  nvcompErrorInternal = 10000
-} nvcompError_t;
+#define NVCOMP_PATCH_VERSION 0
 
 /* Supported datatypes */
 typedef enum nvcompType_t
@@ -71,6 +63,14 @@ typedef enum nvcompType_t
  *****************************************************************************/
 
 /**
+ * NOTE: These interfaces will be removed in future releases, please switch to
+ * the compression schemes specific interfaces in nvcomp/cascaded.h,
+ * nvcomp/lz4.h, nvcomp/snappy, nvcomp/bitcomp.h, and nvcomp/gdeflate.h.
+ */
+
+/**
+ * DEPRECATED: Will be removed in future releases.
+ *
  * @brief Extracts the metadata from the input in_ptr on the device and copies
  *it to the host.
  *
@@ -82,13 +82,15 @@ typedef enum nvcompType_t
  *
  * @return nvcompSuccess if successful, and an error code otherwise.
  */
-nvcompError_t nvcompDecompressGetMetadata(
+nvcompStatus_t nvcompDecompressGetMetadata(
     const void* in_ptr,
     size_t in_bytes,
     void** metadata_ptr,
     cudaStream_t stream);
 
 /**
+ * DEPRECATED: Will be removed in future releases.
+ *
  * @brief Destroys the metadata object and frees the associated memory.
  *
  * @param metadata_ptr The pointer to destroy.
@@ -96,6 +98,8 @@ nvcompError_t nvcompDecompressGetMetadata(
 void nvcompDecompressDestroyMetadata(void* metadata_ptr);
 
 /**
+ * DEPRECATED: Will be removed in future releases.
+ *
  * @brief Computes the required temporary workspace required to perform
  * decompression.
  *
@@ -105,10 +109,12 @@ void nvcompDecompressDestroyMetadata(void* metadata_ptr);
  *
  * @return nvcompSuccess if successful, and an error code otherwise.
  */
-nvcompError_t
+nvcompStatus_t
 nvcompDecompressGetTempSize(const void* metadata_ptr, size_t* temp_bytes);
 
 /**
+ * DEPRECATED: Will be removed in future releases.
+ *
  * @brief Computes the size of the uncompressed data in bytes.
  *
  * @para metadata_ptr The metadata.
@@ -116,10 +122,12 @@ nvcompDecompressGetTempSize(const void* metadata_ptr, size_t* temp_bytes);
  *
  * @return nvcompSuccess if successful, and an error code otherwise.
  */
-nvcompError_t
+nvcompStatus_t
 nvcompDecompressGetOutputSize(const void* metadata_ptr, size_t* output_bytes);
 
 /**
+ * DEPRECATED: Will be removed in future releases.
+ *
  * @brief Get the type of the compressed data.
  *
  * @param metadata_ptr The metadata.
@@ -127,20 +135,12 @@ nvcompDecompressGetOutputSize(const void* metadata_ptr, size_t* output_bytes);
  *
  * @return nvcompSuccess if successful, and an error code otherwise.
  */
-nvcompError_t
+nvcompStatus_t
 nvcompDecompressGetType(const void* metadata_ptr, nvcompType_t* type);
 
 /**
- * @brief Check if the compressed data must be decompressed to the same data
- * type from which was compressed.
+ * DEPRECATED: Will be removed in future releases.
  *
- * @param metadata_ptr The metadata.
- *
- * @return nvcompSuccess if successful, and an error code otherwise.
- */
-int nvcompDecompressIsTypeSensitive(const void* metadata_ptr);
-
-/**
  * @brief Perform the asynchronous decompression.
  *
  * @param in_ptr The compressed data on the device to decompress.
@@ -154,16 +154,15 @@ int nvcompDecompressIsTypeSensitive(const void* metadata_ptr);
  *
  * @return nvcompSuccess if successful, and an error code otherwise.
  */
-nvcompError_t nvcompDecompressAsync(
+nvcompStatus_t nvcompDecompressAsync(
     const void* in_ptr,
     size_t in_bytes,
     void* temp_ptr,
     size_t temp_bytes,
-    const void* metadata_ptr,
+    void* metadata_ptr,
     void* out_ptr,
     size_t out_bytes,
     cudaStream_t stream);
-
 
 #ifdef __cplusplus
 }

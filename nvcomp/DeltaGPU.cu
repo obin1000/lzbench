@@ -28,7 +28,6 @@
 
 #include "DeltaGPU.h"
 #include "common.h"
-#include "CascadedCommon.h"
 #include "type_macros.h"
 
 #include <cassert>
@@ -60,7 +59,7 @@ __global__ void deltaKernel(
     VALUE** const outputPtr,
     const VALUE* const input,
     const size_t* const numDevice,
-    const size_t maxNum)
+    const size_t /* maxNum */)
 {
   const size_t num = *numDevice;
 
