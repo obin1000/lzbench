@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../common.h"
+#include "common.h"
 #include "LZ4Types.h"
 
 namespace nvcomp
