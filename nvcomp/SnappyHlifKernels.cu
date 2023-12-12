@@ -27,8 +27,8 @@
  */
 
 
-#include "highlevel/SnappyHlifKernels.h"
-#include "nvcomp_common_deps/hlif_shared.cuh"
+#include "SnappyHlifKernels.h"
+#include "hlif_shared.cuh"
 #include "SnappyKernels.cuh"
 #include "CudaUtils.h"
 

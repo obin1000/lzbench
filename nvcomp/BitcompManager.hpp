@@ -30,10 +30,10 @@
 
 #include <assert.h>
 
-#include "nvcomp/bitcomp.hpp"
+#include "bitcomp.hpp"
 #include "CudaUtils.h"
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
-#include "highlevel/ManagerBase.hpp"
+#include "hlif_shared_types.hpp"
+#include "ManagerBase.hpp"
 
 namespace nvcomp {
 

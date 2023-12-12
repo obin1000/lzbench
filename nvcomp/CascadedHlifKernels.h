@@ -28,8 +28,8 @@
 
 #include "nvcomp.h"
 #include "common.h"
-#include "nvcomp/cascaded.h"
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
+#include "cascaded.h"
+#include "hlif_shared_types.hpp"
 
 namespace nvcomp
 {

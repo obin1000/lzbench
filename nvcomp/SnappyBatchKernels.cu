@@ -26,7 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "lowlevel/SnappyBatchKernels.h"
+#include "SnappyBatchKernels.h"
 #include "SnappyKernels.cuh"
 #include "CudaUtils.h"
 

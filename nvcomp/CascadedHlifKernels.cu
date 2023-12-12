@@ -27,9 +27,9 @@
  */
 
 #include "CascadedKernels.cuh"
-#include "highlevel/CascadedHlifKernels.h"
-#include "nvcomp_common_deps/hlif_shared.cuh"
-#include "nvcomp/cascaded.h"
+#include "CascadedHlifKernels.h"
+#include "hlif_shared.cuh"
+#include "cascaded.h"
 #include "CudaUtils.h"
 
 namespace nvcomp {

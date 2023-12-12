@@ -31,10 +31,10 @@
 #include "Check.h"
 #include "CudaUtils.h"
 #include "common.h"
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
-#include "nvcomp/nvcompManager.hpp"
-#include "highlevel/ManagerBase.hpp"
-#include "nvcomp/bitcomp.hpp"
+#include "hlif_shared_types.hpp"
+#include "nvcompManager.hpp"
+#include "ManagerBase.hpp"
+#include "bitcomp.hpp"
 #include "BitcompManager.hpp"
 
 #ifdef ENABLE_BITCOMP

@@ -36,9 +36,9 @@
 #include "Check.h"
 #include "CudaUtils.h"
 #include "common.h"
-#include "highlevel/BatchManager.hpp"
-#include "highlevel/SnappyHlifKernels.h"
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
+#include "BatchManager.hpp"
+#include "SnappyHlifKernels.h"
+#include "hlif_shared_types.hpp"
 
 namespace nvcomp {
 

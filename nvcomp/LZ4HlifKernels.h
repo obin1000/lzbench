@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
+#include "hlif_shared_types.hpp"
 
 #include "LZ4Types.h"
 

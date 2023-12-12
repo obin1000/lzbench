@@ -32,8 +32,8 @@
 #include <vector>
 
 #include "CudaUtils.h"
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
-#include "highlevel/PinnedPtrs.hpp"
+#include "hlif_shared_types.hpp"
+#include "PinnedPtrs.hpp"
 #include "nvcomp/nvcompManager.hpp"
 
 namespace nvcomp {

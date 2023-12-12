@@ -31,12 +31,12 @@
 #include <memory>
 #include <vector>
 
-#include "nvcomp/nvcompManager.hpp"
+#include "nvcompManager.hpp"
 
 #include "Check.h"
 #include "CudaUtils.h"
 #include "PinnedPtrs.hpp"
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
+#include "hlif_shared_types.hpp"
 
 namespace nvcomp {
 

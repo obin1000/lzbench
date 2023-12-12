@@ -38,8 +38,8 @@
 #include "CudaUtils.h"
 #include "LZ4HlifKernels.h"
 #include "common.h"
-#include "lowlevel/LZ4CompressionKernels.h"
-#include "nvcomp_common_deps/hlif_shared_types.hpp"
+#include "LZ4CompressionKernels.h"
+#include "hlif_shared_types.hpp"
 
 namespace nvcomp {
 

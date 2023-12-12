@@ -32,7 +32,7 @@
 #include "TempSpaceBroker.h"
 #include "common.h"
 
-#include "nvcomp_common_deps/hlif_shared.cuh"
+#include "hlif_shared.cuh"
 #include "cuda_runtime.h"
 #include "nvcomp_cub.cuh"
 
