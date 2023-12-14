@@ -29,12 +29,12 @@
 #include "Check.h"
 
 #include "nvcomp.h"
-#include "nvcomp/cascaded.h"
-#include "nvcomp/lz4.h"
-#include "nvcomp/bitcomp.h"
+#include "cascaded.h"
+#include "lz4.h"
+#include "bitcomp.h"
 
-#include "nvcomp/nvcompManager.hpp"
-#include "nvcomp/nvcompManagerFactory.hpp"
+#include "nvcompManager.hpp"
+#include "nvcompManagerFactory.hpp"
 
 #include <cstdlib>
 #include <cstring>

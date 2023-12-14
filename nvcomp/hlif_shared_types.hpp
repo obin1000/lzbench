@@ -29,7 +29,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "nvcomp/shared_types.h"
+#include "shared_types.h"
 
 typedef uint64_t ChunkStartOffset_t;
 typedef uint32_t Checksum_t;

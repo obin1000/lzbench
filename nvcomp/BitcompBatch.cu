@@ -28,7 +28,7 @@
 
 #include "common.h"
 #include "nvcomp.h"
-#include "nvcomp/bitcomp.h"
+#include "bitcomp.h"
 #include "type_macros.h"
 
 #ifdef ENABLE_BITCOMP

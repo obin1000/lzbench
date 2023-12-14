@@ -28,7 +28,7 @@
 
 #include "common.h"
 #include "nvcomp.h"
-#include "nvcomp/cascaded.h"
+#include "cascaded.h"
 
 #include <assert.h>
 #include <stdint.h>

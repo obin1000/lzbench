@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <type_traits>
 
-#include "nvcomp/shared_types.h"
+#include "shared_types.h"
 #include "hlif_shared_types.hpp"
 
 namespace cg = cooperative_groups;

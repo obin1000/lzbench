@@ -34,7 +34,7 @@
 #include "CudaUtils.h"
 #include "hlif_shared_types.hpp"
 #include "PinnedPtrs.hpp"
-#include "nvcomp/nvcompManager.hpp"
+#include "nvcompManager.hpp"
 
 namespace nvcomp {
 

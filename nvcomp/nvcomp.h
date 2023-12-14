@@ -30,7 +30,7 @@
 #define NVCOMP_H
 
 #include <cuda_runtime.h>
-#include "nvcomp/shared_types.h"
+#include "shared_types.h"
 
 #ifdef __cplusplus
 extern "C" {

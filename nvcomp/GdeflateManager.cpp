@@ -27,7 +27,7 @@
  */
 
 #include "GdeflateBatchManager.hpp"
-#include "nvcomp/gdeflate.hpp"
+#include "gdeflate.hpp"
 
 namespace nvcomp {
 

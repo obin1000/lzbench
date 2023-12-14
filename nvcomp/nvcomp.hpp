@@ -30,7 +30,7 @@
 #define NVCOMP_API_HPP
 
 #include "nvcomp.h"
-#include "nvcomp/lz4.h"
+#include "lz4.h"
 
 #include <cstdint>
 #include <cuda_runtime.h>

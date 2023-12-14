@@ -30,8 +30,8 @@
 
 #include <memory>
 
-#include "nvcomp/lz4.hpp"
-#include "nvcomp/lz4.h"
+#include "lz4.hpp"
+#include "lz4.h"
 
 #include "BatchManager.hpp"
 #include "Check.h"

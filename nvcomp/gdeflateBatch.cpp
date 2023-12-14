@@ -26,7 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "nvcomp/gdeflate.h"
+#include "gdeflate.h"
 
 #include "Check.h"
 #include "CudaUtils.h"

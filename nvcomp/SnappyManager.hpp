@@ -30,8 +30,8 @@
 
 #include <memory>
 
-#include "nvcomp/snappy.h"
-#include "nvcomp/snappy.hpp"
+#include "snappy.h"
+#include "snappy.hpp"
 
 #include "Check.h"
 #include "CudaUtils.h"

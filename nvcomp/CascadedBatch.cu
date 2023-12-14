@@ -28,7 +28,7 @@
 
 #include "common.h"
 #include "nvcomp.h"
-#include "nvcomp/cascaded.h"
+#include "cascaded.h"
 #include "type_macros.h"
 #include "CascadedKernels.cuh"
 #include "Check.h"

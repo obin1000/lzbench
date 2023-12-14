@@ -29,13 +29,13 @@
 #include <assert.h>
 
 #include "nvcomp.hpp"
-#include "nvcomp/nvcompManager.hpp"
-#include "nvcomp/ans.hpp"
-#include "nvcomp/lz4.hpp"
-#include "nvcomp/snappy.hpp"
-#include "nvcomp/gdeflate.hpp"
-#include "nvcomp/cascaded.hpp"
-#include "nvcomp/bitcomp.hpp"
+#include "nvcompManager.hpp"
+#include "ans.hpp"
+#include "lz4.hpp"
+#include "snappy.hpp"
+#include "gdeflate.hpp"
+#include "cascaded.hpp"
+#include "bitcomp.hpp"
 #include "hlif_shared_types.hpp"
 #include "CudaUtils.h"
 

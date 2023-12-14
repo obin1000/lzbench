@@ -28,8 +28,8 @@
 
 #pragma once
 
-#include "nvcomp/ans.h"
-#include "nvcomp/ans.hpp"
+#include "ans.h"
+#include "ans.hpp"
 #include "BatchManager.hpp"
 #ifdef ENABLE_ANS
 #include "ans_hlif.h"
