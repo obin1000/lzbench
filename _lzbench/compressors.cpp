@@ -1792,9 +1792,19 @@ int64_t lzbench_cuda_return_0(char *inbuf, size_t insize, char *outbuf, size_t o
 #ifdef BENCH_HAS_NVCOMP
 #include "nvcomp/lz4.hpp"
 #include "nvcomp/snappy.hpp"
+#include "nvcomp/ans.hpp"
+#include "nvcomp/bitcomp.hpp"
+#include "nvcomp/cascaded.hpp"
+#include "nvcomp/gdeflate.hpp"
 
 
-enum nvcomp_compressor {NVCOMP_LZ4, NVCOMP_SNAPPY};
+enum nvcomp_compressor{
+        NVCOMP_ANS,
+        NVCOMP_BITCOMP,
+        NVCOMP_CASCADED,
+        NVCOMP_GDEFLATE,
+        NVCOMP_LZ4,
+        NVCOMP_SNAPPY};
 
 typedef struct {
     cudaStream_t stream;
@@ -1823,10 +1833,25 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
     assert(status == cudaSuccess);
 
     switch (compressor_type) {
-      default:
-      case NVCOMP_LZ4:
-        nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(chunk_size,
-                                                               data_type,
+      case NVCOMP_ANS:
+        nvcomp_params->nvcomp_manager = new nvcomp::ANSManager(chunk_size,
+                                                               nvcomp_params->stream,
+                                                               0);
+        break;
+      case NVCOMP_BITCOMP:
+        nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(NVCOMP_TYPE_CHAR,
+                                                               0,
+                                                               nvcomp_params->stream,
+                                                               0);
+        break;
+      case NVCOMP_CASCADED:
+        nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(nvcompBatchedCascadedDefaultOpts,
+                                                               nvcomp_params->stream,
+                                                               0);
+        break;
+      case NVCOMP_GDEFLATE:
+        nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
+                                                               0,
                                                                nvcomp_params->stream,
                                                                0);
         break;
@@ -1834,6 +1859,13 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         nvcomp_params->nvcomp_manager = new nvcomp::SnappyManager(chunk_size,
                                                                   nvcomp_params->stream,
                                                                   0);
+        break;
+      default:
+      case NVCOMP_LZ4:
+        nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(chunk_size,
+                                                               data_type,
+                                                               nvcomp_params->stream,
+                                                               0);
         break;
     }
 
@@ -1900,6 +1932,26 @@ int64_t lzbench_nvcomp_decompress(char *inbuf, size_t insize, char *outbuf, size
     assert(status == cudaSuccess);
 
     return decomp_config.decomp_data_size;
+}
+
+char* lzbench_nvcomp_ans_init(const size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_ANS);
+}
+
+char* lzbench_nvcomp_bitcomp_init(size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_BITCOMP);
+}
+
+char* lzbench_nvcomp_cascaded_init(const size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_CASCADED);
+}
+
+char* lzbench_nvcomp_gdeflate_init(size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_GDEFLATE);
 }
 
 char* lzbench_nvcomp_lz4_init(const size_t insize, size_t level, size_t)

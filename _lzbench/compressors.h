@@ -515,6 +515,11 @@ int64_t lzbench_return_0(char *inbuf, size_t insize, char *outbuf, size_t outsiz
 
         char* lzbench_nvcomp_lz4_init(size_t insize, size_t level, size_t);
         char* lzbench_nvcomp_snappy_init(size_t insize, size_t level, size_t);
+        char* lzbench_nvcomp_ans_init(size_t insize, size_t level, size_t);
+        char* lzbench_nvcomp_gdeflate_init(size_t insize, size_t level, size_t);
+        char* lzbench_nvcomp_bitcomp_init(size_t insize, size_t level, size_t);
+        char* lzbench_nvcomp_cascaded_init(size_t insize, size_t level, size_t);
+
 #else
         #define lzbench_nvcomp_deinit NULL
         #define lzbench_nvcomp_compress NULL
@@ -522,6 +527,10 @@ int64_t lzbench_return_0(char *inbuf, size_t insize, char *outbuf, size_t outsiz
 
         #define lzbench_nvcomp_lz4_init NULL
         #define lzbench_nvcomp_snappy_init NULL
+        #define lzbench_nvcomp_ans_init NULL
+        #define lzbench_nvcomp_gdeflate_init NULL
+        #define lzbench_nvcomp_bitcomp_init NULL
+        #define lzbench_nvcomp_cascaded_init NULL
 #endif
 
 #endif // LZBENCH_COMPRESSORS_H
