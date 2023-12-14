@@ -1791,111 +1791,125 @@ int64_t lzbench_cuda_return_0(char *inbuf, size_t insize, char *outbuf, size_t o
 
 #ifdef BENCH_HAS_NVCOMP
 #include "nvcomp/lz4.hpp"
+#include "nvcomp/snappy.hpp"
 
+
+enum nvcomp_compressor {NVCOMP_LZ4, NVCOMP_SNAPPY};
 
 typedef struct {
-  size_t chunk_size;
-  nvcompType_t data_type;
-  cudaStream_t stream;
-  uint8_t* device_input_ptrs;
-  uint8_t* comp_buffer;
-  uint8_t* res_decomp_buffer;
-  nvcomp::LZ4Manager* nvcomp_manager;
-} nvcomp_params_s;
+    cudaStream_t stream;
+    uint8_t* device_input_ptrs;
+    uint8_t* comp_buffer;
+    uint8_t* res_decomp_buffer;
+    nvcomp::PimplManager* nvcomp_manager;
+  } nvcomp_params_s;
+
 
 // allocate the host and device memory buffers for the nvcom LZ4 compression and decompression
 // the chunk size is configured by the compression level, 0 to 5 inclusive, corresponding to a chunk size from 32 kB to 1 MB
-char* lzbench_nvcomp_lz4_init(const size_t insize, size_t level, size_t)
-{
-  // allocate the host memory for the algorithm options
-  nvcomp_params_s* nvcomp_params = (nvcomp_params_s*) malloc(sizeof(nvcomp_params_s));
-  if (!nvcomp_params) return nullptr;
+nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_compressor compressor_type) {
+    // allocate the host memory for the algorithm options
+    auto* nvcomp_params = (nvcomp_params_s*) malloc(sizeof(nvcomp_params_s));
+    if (!nvcomp_params) return nullptr;
+    // set the chunk size based on the compression level
+    size_t chunk_size = 1 << (15 + level);
+    nvcompType_t data_type = NVCOMP_TYPE_CHAR;
+    int status = 0;
 
-  // set the chunk size based on the compression level
-  nvcomp_params->chunk_size = 1 << (15 + level);
-  nvcomp_params->data_type = NVCOMP_TYPE_CHAR;
-  int status = 0;
+    status = cudaStreamCreate(&nvcomp_params->stream);
+    assert(status == cudaSuccess);
 
-  status = cudaStreamCreate(&nvcomp_params->stream);
-  assert(status == cudaSuccess);
+    status = cudaMalloc(&nvcomp_params->device_input_ptrs, insize);
+    assert(status == cudaSuccess);
 
-  status = cudaMalloc(&nvcomp_params->device_input_ptrs, insize);
-  assert(status == cudaSuccess);
+    switch (compressor_type) {
+      default:
+      case NVCOMP_LZ4:
+        nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(chunk_size,
+                                                               data_type,
+                                                               nvcomp_params->stream,
+                                                               0);
+        break;
+      case NVCOMP_SNAPPY:
+        nvcomp_params->nvcomp_manager = new nvcomp::SnappyManager(chunk_size,
+                                                                  nvcomp_params->stream,
+                                                                  0);
+        break;
+    }
 
-  nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(nvcomp_params->chunk_size,
-                              nvcomp_params->data_type,
-                              nvcomp_params->stream,
-                                           0);
 
+    auto comp_config  = nvcomp_params->nvcomp_manager->configure_compression(insize);
+    status = cudaMalloc(&nvcomp_params->comp_buffer, comp_config.max_compressed_buffer_size);
+    assert(status == cudaSuccess);
 
-  auto comp_config  = nvcomp_params->nvcomp_manager->configure_compression(insize);
-  status = cudaMalloc(&nvcomp_params->comp_buffer, comp_config.max_compressed_buffer_size);
-  assert(status == cudaSuccess);
-
-  auto decomp_config = nvcomp_params->nvcomp_manager->configure_decompression(comp_config);
-  status = cudaMalloc(&nvcomp_params->res_decomp_buffer, decomp_config.decomp_data_size);
-  assert(status == cudaSuccess);
-
-  return (char*) nvcomp_params;
+    auto decomp_config = nvcomp_params->nvcomp_manager->configure_decompression(comp_config);
+    status = cudaMalloc(&nvcomp_params->res_decomp_buffer, decomp_config.decomp_data_size);
+    assert(status == cudaSuccess);
+    return nvcomp_params;
 }
 
-void lzbench_nvcomp_lz4_deinit(char* params)
-{
-//  printf("Starting deinit\n");
-  auto* nvcomp_params = (nvcomp_params_s*) params;
+void lzbench_nvcomp_deinit(char* params) {
+    auto* nvcomp_params = (nvcomp_params_s*) params;
+    // free all the device memory
+    cudaFree(nvcomp_params->comp_buffer);
+    cudaFree(nvcomp_params->device_input_ptrs);
+    cudaFree(nvcomp_params->res_decomp_buffer);
 
-  // free all the device memory
-  cudaFree(nvcomp_params->comp_buffer);
-  cudaFree(nvcomp_params->device_input_ptrs);
-  cudaFree(nvcomp_params->res_decomp_buffer);
+    // release the CUDA stream
+    cudaStreamDestroy(nvcomp_params->stream);
 
-  // release the CUDA stream
-  cudaStreamDestroy(nvcomp_params->stream);
+    delete nvcomp_params->nvcomp_manager;
 
-  delete nvcomp_params->nvcomp_manager;
-
-  // free the host memory for the algorithm options
-  free(nvcomp_params);
+    // free the host memory for the algorithm options
+    free(params);
 }
 
-int64_t lzbench_nvcomp_lz4_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char* params)
-{
-  auto* nvcomp_params = (nvcomp_params_s*) params;
-  int status = 0;
+int64_t lzbench_nvcomp_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char* params) {
+    auto* nvcomp_params = (nvcomp_params_s*) params;
+    int status = 0;
+    status = cudaMemcpy(nvcomp_params->device_input_ptrs, inbuf, insize, cudaMemcpyDefault);
+    assert(status == cudaSuccess);
 
-  status = cudaMemcpy(nvcomp_params->device_input_ptrs, inbuf, insize, cudaMemcpyDefault);
-  assert(status == cudaSuccess);
+    auto comp_config  = nvcomp_params->nvcomp_manager->configure_compression(insize);
 
-  auto comp_config  = nvcomp_params->nvcomp_manager->configure_compression(insize);
-
-  nvcomp_params->nvcomp_manager->compress(nvcomp_params->device_input_ptrs, nvcomp_params->comp_buffer, comp_config);
-  size_t comp_size = nvcomp_params->nvcomp_manager->get_compressed_output_size(nvcomp_params->comp_buffer);
-  status = cudaMemcpy(outbuf, nvcomp_params->comp_buffer, comp_size, cudaMemcpyDefault);
-  assert(status == cudaSuccess);
-  status = cudaStreamSynchronize(nvcomp_params->stream);
-  assert(status == cudaSuccess);
-  return comp_size;
+    nvcomp_params->nvcomp_manager->compress(nvcomp_params->device_input_ptrs, nvcomp_params->comp_buffer, comp_config);
+    size_t comp_size = nvcomp_params->nvcomp_manager->get_compressed_output_size(nvcomp_params->comp_buffer);
+    status = cudaMemcpy(outbuf, nvcomp_params->comp_buffer, comp_size, cudaMemcpyDefault);
+    assert(status == cudaSuccess);
+    status = cudaStreamSynchronize(nvcomp_params->stream);
+    assert(status == cudaSuccess);
+    return comp_size;
 }
 
-int64_t lzbench_nvcomp_lz4_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char* params)
-{
-  auto* nvcomp_params = (nvcomp_params_s*) params;
-  int status = 0;
+int64_t lzbench_nvcomp_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char* params) {
+    auto* nvcomp_params = (nvcomp_params_s*) params;
 
-  auto decomp_config = nvcomp_params->nvcomp_manager->configure_decompression(nvcomp_params->comp_buffer);
+    int status = 0;
 
-  status = cudaMemcpy(nvcomp_params->comp_buffer, inbuf, insize, cudaMemcpyDefault);
-  assert(status == cudaSuccess);
+    auto decomp_config = nvcomp_params->nvcomp_manager->configure_decompression(nvcomp_params->comp_buffer);
+
+    status = cudaMemcpy(nvcomp_params->comp_buffer, inbuf, insize, cudaMemcpyDefault);
+    assert(status == cudaSuccess);
 
   nvcomp_params->nvcomp_manager->decompress(nvcomp_params->res_decomp_buffer, nvcomp_params->comp_buffer, decomp_config);
 
-  status = cudaMemcpy(outbuf, nvcomp_params->res_decomp_buffer, decomp_config.decomp_data_size, cudaMemcpyDefault);
-  assert(status == cudaSuccess);
+    status = cudaMemcpy(outbuf, nvcomp_params->res_decomp_buffer, decomp_config.decomp_data_size, cudaMemcpyDefault);
+    assert(status == cudaSuccess);
 
-  status = cudaStreamSynchronize(nvcomp_params->stream);
-  assert(status == cudaSuccess);
+    status = cudaStreamSynchronize(nvcomp_params->stream);
+    assert(status == cudaSuccess);
 
-  return decomp_config.decomp_data_size;
+    return decomp_config.decomp_data_size;
+}
+
+char* lzbench_nvcomp_lz4_init(const size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_LZ4);
+}
+
+char* lzbench_nvcomp_snappy_init(size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_SNAPPY);
 }
 
 #endif  // BENCH_HAS_NVCOMP
