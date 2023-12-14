@@ -1844,10 +1844,12 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
                                                                nvcomp_params->stream,
                                                                0);
         break;
-      case NVCOMP_CASCADED:
-        nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(nvcompBatchedCascadedDefaultOpts,
-                                                               nvcomp_params->stream,
-                                                               0);
+      case NVCOMP_CASCADED: {
+        nvcompBatchedCascadedOpts_t cascaded_conf{chunk_size, data_type, 2, 1, 1};
+        nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(cascaded_conf,
+                                                                    nvcomp_params->stream,
+                                                                    0);
+      }
         break;
       case NVCOMP_GDEFLATE:
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
