@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,28 +31,28 @@
 #include <memory>
 
 #include "nvcompManager.hpp"
-#include "nvcomp/lz4.h"
+#include "nvcomp/zstd.h"
 
 namespace nvcomp {
 
-struct LZ4FormatSpecHeader {
-  nvcompType_t data_type;
+struct ZstdFormatSpecHeader {
+    // Empty for now
 };
 
 /**
- * @brief High-level interface class for LZ4 compressor
+ * @brief High-level interface class for the Zstd compressor
+ * 
+ * uncomp_chunk_size must be <= 16 MB. Use 64-128 KB for best performance. 
  *
- * @note Any uncompressed data buffer to be compressed MUST be a size that is a
- * multiple of the data type size, else compression may crash or result in
- * invalid output.
  */
-struct LZ4Manager : PimplManager {
+struct ZstdManager : PimplManager {
 
-  LZ4Manager(
-    size_t uncomp_chunk_size, const nvcompBatchedLZ4Opts_t& format_opts = nvcompBatchedLZ4DefaultOpts, 
+  ZstdManager(
+    size_t uncomp_chunk_size, const nvcompBatchedZstdOpts_t& format_opts,
     cudaStream_t user_stream = 0, const int device_id = 0, ChecksumPolicy checksum_policy = NoComputeNoVerify);
 
-  ~LZ4Manager();
+  ~ZstdManager();
 };
 
 } // namespace nvcomp
+

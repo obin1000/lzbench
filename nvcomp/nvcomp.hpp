@@ -30,7 +30,7 @@
 #define NVCOMP_API_HPP
 
 #include "nvcomp.h"
-#include "lz4.h"
+#include "nvcomp/lz4.h"
 
 #include <cstdint>
 #include <cuda_runtime.h>
@@ -79,28 +79,38 @@ private:
  *****************************************************************************/
 
 template <typename T>
+__device__ __host__ constexpr nvcompType_t TypeOfConst()
+{
+  // This is as a single statement so that it can be constexpr in C++11 code.
+  return std::is_same<T, int8_t>::value ?
+    NVCOMP_TYPE_CHAR : (
+  std::is_same<T, uint8_t>::value ?
+    NVCOMP_TYPE_UCHAR : (
+  std::is_same<T, int16_t>::value ?
+    NVCOMP_TYPE_SHORT : (
+  std::is_same<T, uint16_t>::value ?
+    NVCOMP_TYPE_USHORT : (
+  std::is_same<T, int32_t>::value ?
+    NVCOMP_TYPE_INT : (
+  std::is_same<T, uint32_t>::value ?
+    NVCOMP_TYPE_UINT : (
+  std::is_same<T, int64_t>::value ?
+    NVCOMP_TYPE_LONGLONG : (
+  std::is_same<T, uint64_t>::value ?
+    NVCOMP_TYPE_ULONGLONG : (
+    NVCOMP_TYPE_BITS
+  ))))))));
+}
+
+template <typename T>
 inline nvcompType_t TypeOf()
 {
-  if (std::is_same<T, int8_t>::value) {
-    return NVCOMP_TYPE_CHAR;
-  } else if (std::is_same<T, uint8_t>::value) {
-    return NVCOMP_TYPE_UCHAR;
-  } else if (std::is_same<T, int16_t>::value) {
-    return NVCOMP_TYPE_SHORT;
-  } else if (std::is_same<T, uint16_t>::value) {
-    return NVCOMP_TYPE_USHORT;
-  } else if (std::is_same<T, int32_t>::value) {
-    return NVCOMP_TYPE_INT;
-  } else if (std::is_same<T, uint32_t>::value) {
-    return NVCOMP_TYPE_UINT;
-  } else if (std::is_same<T, int64_t>::value) {
-    return NVCOMP_TYPE_LONGLONG;
-  } else if (std::is_same<T, uint64_t>::value) {
-    return NVCOMP_TYPE_ULONGLONG;
-  } else {
-    throw NVCompException(
-        nvcompErrorNotSupported, "nvcomp does not support the given type.");
+  auto type = TypeOfConst<T>();
+  if (type != NVCOMP_TYPE_BITS) {
+    return type;
   }
+  throw NVCompException(
+      nvcompErrorNotSupported, "nvcomp does not support the given type.");
 }
 
 inline void throwExceptionIfError(nvcompStatus_t error, const std::string& msg)

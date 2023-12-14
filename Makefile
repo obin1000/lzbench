@@ -302,6 +302,7 @@ endif
 ifneq "$(LIBCUDART)" ""
 ifneq "$(DONT_BUILD_NVCOMP)" "1"
     DEFINES += -DBENCH_HAS_NVCOMP
+    LDFLAGS += -L./nvcomp -l:libnvcomp_device.a -Wl,-rpath=./nvcomp $(wildcard nvcomp/*.so)
     NVCOMP_CPP_SRC = $(wildcard nvcomp/*.cpp)
     NVCOMP_CPP_OBJ = $(NVCOMP_CPP_SRC:%=%.o)
     NVCOMP_CU_SRC  = $(wildcard nvcomp/*.cu)

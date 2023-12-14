@@ -29,8 +29,10 @@
 #ifndef NVCOMP_H
 #define NVCOMP_H
 
+#include "nvcomp/shared_types.h"
+
 #include <cuda_runtime.h>
-#include "shared_types.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,9 +42,9 @@ extern "C" {
  * CONSTANTS ******************************************************************
  *****************************************************************************/
 
-#define NVCOMP_MAJOR_VERSION 2
-#define NVCOMP_MINOR_VERSION 2
-#define NVCOMP_PATCH_VERSION 0
+#define NVCOMP_MAJOR_VERSION 3
+#define NVCOMP_MINOR_VERSION 0
+#define NVCOMP_PATCH_VERSION 5
 
 /* Supported datatypes */
 typedef enum nvcompType_t
