@@ -1787,16 +1787,20 @@ int64_t lzbench_cuda_memcpy(char *inbuf, size_t insize, char *outbuf, size_t out
 #include "nvcomp/ans.hpp"
 #include "nvcomp/bitcomp.hpp"
 #include "nvcomp/cascaded.hpp"
+#include "nvcomp/deflate.hpp"
 #include "nvcomp/gdeflate.hpp"
+#include "nvcomp/zstd.hpp"
 
 
 enum nvcomp_compressor{
         NVCOMP_ANS,
         NVCOMP_BITCOMP,
         NVCOMP_CASCADED,
+        NVCOMP_DEFLATE,
         NVCOMP_GDEFLATE,
         NVCOMP_LZ4,
-        NVCOMP_SNAPPY};
+        NVCOMP_SNAPPY,
+        NVCOMP_ZSTD};
 
 typedef struct {
     cudaStream_t stream;
@@ -1851,10 +1855,18 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
                                                                     NoComputeNoVerify);
       }
         break;
+      case NVCOMP_DEFLATE: {
+        nvcompBatchedDeflateOpts_t deflate_conf { 2 };
+        nvcomp_params->nvcomp_manager = new nvcomp::DeflateManager(chunk_size,
+                                                                   deflate_conf,
+                                                                    nvcomp_params->stream,
+                                                                    0,
+                                                                    NoComputeNoVerify);
+      } break;
       case NVCOMP_GDEFLATE: {
-        nvcompBatchedGdeflateOpts_t gdflate_conf { 2 };
+        nvcompBatchedGdeflateOpts_t gdeflate_conf { 2 };
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
-                                                                    gdflate_conf,
+                                                                    gdeflate_conf,
                                                                     nvcomp_params->stream,
                                                                     0,
                                                                     NoComputeNoVerify);
@@ -1866,7 +1878,6 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
                                                                   nvcomp_params->stream,
                                                                   0, NoComputeNoVerify);
       }break;
-      default:
       case NVCOMP_LZ4: {
         nvcompBatchedLZ4Opts_t lz4_conf { data_type };
         nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(chunk_size,
@@ -1875,6 +1886,16 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
                                                                0,
                                                                NoComputeNoVerify);
       }break;
+      case NVCOMP_ZSTD: {
+        nvcompBatchedZstdOpts_t zstd_conf { 0 };
+        nvcomp_params->nvcomp_manager = new nvcomp::ZstdManager(chunk_size,
+                                                                zstd_conf,
+                                                               nvcomp_params->stream,
+                                                               0,
+                                                               NoComputeNoVerify);
+      }break;
+      default:
+        printf("Undefined NVCOMP compressor");
     }
 
 
@@ -1957,6 +1978,11 @@ char* lzbench_nvcomp_cascaded_init(const size_t insize, size_t level, size_t)
   return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_CASCADED);
 }
 
+char* lzbench_nvcomp_deflate_init(size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_DEFLATE);
+}
+
 char* lzbench_nvcomp_gdeflate_init(size_t insize, size_t level, size_t)
 {
   return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_GDEFLATE);
@@ -1970,6 +1996,11 @@ char* lzbench_nvcomp_lz4_init(const size_t insize, size_t level, size_t)
 char* lzbench_nvcomp_snappy_init(size_t insize, size_t level, size_t)
 {
   return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_SNAPPY);
+}
+
+char* lzbench_nvcomp_zstd_init(size_t insize, size_t level, size_t)
+{
+  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_ZSTD);
 }
 
 #endif  // BENCH_HAS_NVCOMP
