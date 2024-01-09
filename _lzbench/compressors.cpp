@@ -1810,7 +1810,7 @@ typedef struct {
     nvcomp::PimplManager* nvcomp_manager;
   } nvcomp_params_s;
 
-
+const int GPU_ID = 0;
 // allocate the host and device memory buffers for the nvcom LZ4 compression and decompression
 // the chunk size is configured by the compression level, 0 to 5 inclusive, corresponding to a chunk size from 32 kB to 1 MB
 nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_compressor compressor_type) {
@@ -1834,7 +1834,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         nvcomp_params->nvcomp_manager = new nvcomp::ANSManager(chunk_size,
                                                                ans_conf,
                                                                nvcomp_params->stream,
-                                                               0,
+                                                               GPU_ID,
                                                                NoComputeNoVerify);
       }
         break;
@@ -1843,7 +1843,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(chunk_size,
                                                                    bitcomp_conf,
                                                                    nvcomp_params->stream,
-                                                                   0,
+                                                                   GPU_ID,
                                                                    NoComputeNoVerify);
         }break;
       case NVCOMP_CASCADED: {
@@ -1851,7 +1851,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(chunk_size,
                                                                     cascaded_conf,
                                                                     nvcomp_params->stream,
-                                                                    0,
+                                                                    GPU_ID,
                                                                     NoComputeNoVerify);
       }
         break;
@@ -1860,7 +1860,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         nvcomp_params->nvcomp_manager = new nvcomp::DeflateManager(chunk_size,
                                                                    deflate_conf,
                                                                     nvcomp_params->stream,
-                                                                    0,
+                                                                    GPU_ID,
                                                                     NoComputeNoVerify);
       } break;
       case NVCOMP_GDEFLATE: {
@@ -1868,7 +1868,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
                                                                     gdeflate_conf,
                                                                     nvcomp_params->stream,
-                                                                    0,
+                                                                    GPU_ID,
                                                                     NoComputeNoVerify);
       } break;
       case NVCOMP_SNAPPY: {
@@ -1876,14 +1876,14 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         nvcomp_params->nvcomp_manager = new nvcomp::SnappyManager(chunk_size,
                                                                   snappy_conf,
                                                                   nvcomp_params->stream,
-                                                                  0, NoComputeNoVerify);
+                                                                  GPU_ID, NoComputeNoVerify);
       }break;
       case NVCOMP_LZ4: {
         nvcompBatchedLZ4Opts_t lz4_conf { data_type };
         nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(chunk_size,
                                                                lz4_conf,
                                                                nvcomp_params->stream,
-                                                               0,
+                                                               GPU_ID,
                                                                NoComputeNoVerify);
       }break;
       case NVCOMP_ZSTD: {
