@@ -764,6 +764,41 @@ void usage(lzbench_params_t* params)
     fprintf(stderr,"  " PROGNAME " -t0u0i3j5 -ezstd fname = the same as above with aggregated parameters\n");
 }
 
+#ifdef BENCH_HAS_CUDA
+char* gpu_brand_string(void)
+{
+    char* output;
+    int device;
+    cudaError_t cuda_status = cudaGetDevice(&device);
+    if (cuda_status != cudaSuccess) {
+        asprintf(&output, "Error finding CUDA device: %s\n", cudaGetErrorString(cuda_status));
+        return output;
+    }
+
+    cudaDeviceProp prop;
+    cuda_status = cudaGetDeviceProperties(&prop, device);
+    if (cuda_status != cudaSuccess) {
+        asprintf(&output, "Error getting CUDA device properties: %s\n", cudaGetErrorString(cuda_status));
+        return output;
+    }
+
+    int runtime_version;
+    cuda_status = cudaRuntimeGetVersion(&runtime_version);
+    if (cuda_status != cudaSuccess) {
+        asprintf(&output, "Failed getting CUDA runtime version: %s\n", cudaGetErrorString(cuda_status));
+        return output;
+    }
+    int driver_version;
+    cuda_status = cudaDriverGetVersion(&driver_version);
+    if (cuda_status != cudaSuccess) {
+        asprintf(&output, "Failed getting CUDA driver version: %s\n", cudaGetErrorString(cuda_status));
+        return output;
+    }
+    asprintf(&output, "CUDA runtime: %u CUDA driver: %u\nGPU: %s\nGPU memory: %u bytes\nGPU SM: %u", runtime_version, driver_version, prop.name, prop.totalGlobalMem, prop.multiProcessorCount);
+    return output;
+}
+#endif  // BENCH_HAS_CUDA
+
 char* cpu_brand_string(void)
 {
     uint32_t mx[4], i, a, b, c, d;
@@ -804,6 +839,7 @@ int main( int argc, char** argv)
     unsigned ifnIdx = 0;
     bool join = false;
     char* cpu_brand;
+    char* gpu_brand;
 #ifdef UTIL_HAS_CREATEFILELIST
     const char** extendedFileList = NULL;
     char* fileNamesBuf = NULL;
@@ -945,25 +981,13 @@ int main( int argc, char** argv)
         argv++;
         argc--;
     }
-
+    LZBENCH_PRINT(2, PROGNAME " " PROGVERSION " (%d-bit " PROGOS ")\nAssembled by P.Skibinski\n\n", (uint32_t)(8 * sizeof(uint8_t*)));
     cpu_brand = cpu_brand_string();
+    LZBENCH_PRINT(2, "%s\n", cpu_brand);
     #ifdef BENCH_HAS_CUDA
-        int runtimeVersion;
-        cudaError_t cudaStatus;
-        cudaStatus = cudaRuntimeGetVersion(&runtimeVersion);
-        if (cudaStatus != cudaSuccess) {
-            LZBENCH_PRINT(5, "Failed getting CUDA runtime version%c\n", ' ');
-            return 1;
-        }
-        int driverVersion;
-        cudaStatus = cudaDriverGetVersion(&driverVersion);
-        if (cudaStatus != cudaSuccess) {
-            LZBENCH_PRINT(5, "Failed getting CUDA driver version%c\n", ' ');
-            return 1;
-        }
-        LZBENCH_PRINT(2, "CUDA runtime: %i CUDA driver: %i\n", runtimeVersion, driverVersion);
+        gpu_brand = gpu_brand_string();
+        LZBENCH_PRINT(2, "%s\n\n", gpu_brand);
     #endif  // BENCH_HAS_CUDA
-    LZBENCH_PRINT(2, PROGNAME " " PROGVERSION " (%d-bit " PROGOS ")  %s\nAssembled by P.Skibinski\n\n", (uint32_t)(8 * sizeof(uint8_t*)), cpu_brand);
     LZBENCH_PRINT(5, "params: chunk_size=%d c_iters=%d d_iters=%d cspeed=%d cmintime=%d dmintime=%d encoder_list=%s\n", (int)params->chunk_size, params->c_iters, params->d_iters, params->cspeed, params->cmintime, params->dmintime, encoder_list);
 
     if (ifnIdx < 1)  { usage(params); goto _clean; }
@@ -1035,5 +1059,7 @@ _clean:
     free((void*)inFileNames);
     if (cpu_brand)
         free(cpu_brand);
+    if (gpu_brand)
+        free(gpu_brand);
     return result;
 }
