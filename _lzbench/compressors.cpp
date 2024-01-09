@@ -1810,7 +1810,6 @@ typedef struct {
     nvcomp::PimplManager* nvcomp_manager;
   } nvcomp_params_s;
 
-const int GPU_ID = 0;
 // allocate the host and device memory buffers for the nvcom LZ4 compression and decompression
 // the chunk size is configured by the compression level, 0 to 5 inclusive, corresponding to a chunk size from 32 kB to 1 MB
 nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_compressor compressor_type) {

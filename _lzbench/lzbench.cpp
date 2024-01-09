@@ -769,6 +769,7 @@ char* gpu_brand_string(void)
 {
     char* output;
     int device;
+    cudaSetDevice(GPU_ID);
     cudaError_t cuda_status = cudaGetDevice(&device);
     if (cuda_status != cudaSuccess) {
         asprintf(&output, "Error finding CUDA device: %s\n", cudaGetErrorString(cuda_status));

@@ -506,6 +506,7 @@ int64_t lzbench_memcpy(char *inbuf, size_t insize, char *outbuf, size_t outsize,
 #endif
 
 #ifdef BENCH_HAS_NVCOMP
+		const int GPU_ID = 0;
         void lzbench_nvcomp_deinit(char* workmem);
         int64_t lzbench_nvcomp_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char* workmem);
         int64_t lzbench_nvcomp_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char* workmem);
