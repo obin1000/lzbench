@@ -1838,7 +1838,12 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
       }
         break;
       case NVCOMP_BITCOMP: {
-        nvcompBatchedBitcompFormatOpts bitcomp_conf {0, data_type};
+        int bitcomp_algo = 1;
+        if (level > 5) {
+          bitcomp_algo = 0;
+          chunk_size = chunk_size >> 5;
+        }
+        nvcompBatchedBitcompFormatOpts bitcomp_conf {bitcomp_algo, data_type};
         nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(chunk_size,
                                                                    bitcomp_conf,
                                                                    nvcomp_params->stream,
@@ -1846,7 +1851,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
                                                                    NoComputeNoVerify);
         }break;
       case NVCOMP_CASCADED: {
-        nvcompBatchedCascadedOpts_t cascaded_conf{chunk_size, data_type, 2, 1, 1};
+        nvcompBatchedCascadedOpts_t cascaded_conf{4096, data_type, (int) level, (int) level, 1};
         nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(chunk_size,
                                                                     cascaded_conf,
                                                                     nvcomp_params->stream,
