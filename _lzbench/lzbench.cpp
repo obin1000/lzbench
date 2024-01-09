@@ -26,6 +26,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifdef BENCH_HAS_CUDA
+#include <cuda_runtime_api.h>
+#endif  // BENCH_HAS_CUDA
+
 
 int istrcmp(const char *str1, const char *str2)
 {
@@ -943,6 +947,22 @@ int main( int argc, char** argv)
     }
 
     cpu_brand = cpu_brand_string();
+    #ifdef BENCH_HAS_CUDA
+        int runtimeVersion;
+        cudaError_t cudaStatus;
+        cudaStatus = cudaRuntimeGetVersion(&runtimeVersion);
+        if (cudaStatus != cudaSuccess) {
+            LZBENCH_PRINT(5, "Failed getting CUDA runtime version%c\n", ' ');
+            return 1;
+        }
+        int driverVersion;
+        cudaStatus = cudaDriverGetVersion(&driverVersion);
+        if (cudaStatus != cudaSuccess) {
+            LZBENCH_PRINT(5, "Failed getting CUDA driver version%c\n", ' ');
+            return 1;
+        }
+        LZBENCH_PRINT(2, "CUDA runtime: %i CUDA driver: %i\n", runtimeVersion, driverVersion);
+    #endif  // BENCH_HAS_CUDA
     LZBENCH_PRINT(2, PROGNAME " " PROGVERSION " (%d-bit " PROGOS ")  %s\nAssembled by P.Skibinski\n\n", (uint32_t)(8 * sizeof(uint8_t*)), cpu_brand);
     LZBENCH_PRINT(5, "params: chunk_size=%d c_iters=%d d_iters=%d cspeed=%d cmintime=%d dmintime=%d encoder_list=%s\n", (int)params->chunk_size, params->c_iters, params->d_iters, params->cspeed, params->cmintime, params->dmintime, encoder_list);
 
