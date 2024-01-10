@@ -1852,7 +1852,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
         int bitcomp_algo = 1;
         if (level > 5) {
           bitcomp_algo = 0;
-          chunk_size = chunk_size >> 5;
+          chunk_size = chunk_size >> 6;
         }
         nvcompBatchedBitcompFormatOpts bitcomp_conf {bitcomp_algo, data_type};
         nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(chunk_size,
@@ -1868,10 +1868,9 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
                                                                     nvcomp_params->stream,
                                                                     GPU_ID,
                                                                     NoComputeNoVerify);
-      }
-        break;
+      }break;
       case NVCOMP_DEFLATE: {
-        nvcompBatchedDeflateOpts_t deflate_conf { 2 };
+        nvcompBatchedDeflateOpts_t deflate_conf { 0 };
         nvcomp_params->nvcomp_manager = new nvcomp::DeflateManager(chunk_size,
                                                                    deflate_conf,
                                                                     nvcomp_params->stream,
@@ -1879,7 +1878,12 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
                                                                     NoComputeNoVerify);
       } break;
       case NVCOMP_GDEFLATE: {
-        nvcompBatchedGdeflateOpts_t gdeflate_conf { 2 };
+        int gdeflate_algo = 2;
+        if (level > 1) {
+          gdeflate_algo = 0;
+          chunk_size = chunk_size >> 2;
+        }
+        nvcompBatchedGdeflateOpts_t gdeflate_conf { gdeflate_algo };
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
                                                                     gdeflate_conf,
                                                                     nvcomp_params->stream,
