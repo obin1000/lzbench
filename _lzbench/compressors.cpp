@@ -1841,7 +1841,27 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
                                                                device);
         break;
       case NVCOMP_CASCADED: {
-        nvcompBatchedCascadedOpts_t cascaded_conf{chunk_size, data_type, 2, 1, 1};
+        int num_RLE = 0;
+        int num_delta = 0;
+        switch (level) {
+          default: {
+            num_RLE = 0;
+            num_delta = 0;
+          }break;
+          case 2: {
+            num_RLE = 1;
+            num_delta = 0;
+          }break;
+          case 3: {
+            num_RLE = 1;
+            num_delta = 1;
+          }break;
+          case 4: {
+            num_RLE = 2;
+            num_delta = 1;
+          }break;
+        }
+        nvcompBatchedCascadedOpts_t cascaded_conf{4096, data_type, num_RLE, num_delta, 1};
         nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(cascaded_conf,
                                                                     nvcomp_params->stream,
                                                                     device);
