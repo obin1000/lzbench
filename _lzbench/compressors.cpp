@@ -1836,7 +1836,7 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
         break;
       case NVCOMP_BITCOMP:
         nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(NVCOMP_TYPE_CHAR,
-                                                               0,
+                                                               level,
                                                                nvcomp_params->stream,
                                                                device);
         break;
@@ -1847,26 +1847,25 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
           default: {
             num_RLE = 0;
             num_delta = 0;
-          }break;
+          } break;
           case 2: {
             num_RLE = 1;
             num_delta = 0;
-          }break;
+          } break;
           case 3: {
             num_RLE = 1;
             num_delta = 1;
-          }break;
+          } break;
           case 4: {
             num_RLE = 2;
             num_delta = 1;
-          }break;
+          } break;
         }
         nvcompBatchedCascadedOpts_t cascaded_conf{4096, data_type, num_RLE, num_delta, 1};
         nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(cascaded_conf,
                                                                     nvcomp_params->stream,
                                                                     device);
-      }
-        break;
+      } break;
       case NVCOMP_GDEFLATE:
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
                                                                0,
