@@ -44,7 +44,7 @@
 #include <vector>
 
 #ifdef ENABLE_GDEFLATE
-#include "gdeflate.h"
+#include "lib/include/gdeflate.h"
 #include "gdeflateKernels.h"
 #endif
 

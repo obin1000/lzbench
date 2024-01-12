@@ -44,7 +44,7 @@
 #include <vector>
 
 #ifdef ENABLE_ANS
-#include "ans.h"
+#include "lib/include/ans.h"
 #endif
 
 using namespace nvcomp;

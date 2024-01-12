@@ -32,7 +32,7 @@
 #include "ans.hpp"
 #include "BatchManager.hpp"
 #ifdef ENABLE_ANS
-#include "ans_hlif.h"
+#include "lib/include/ans_hlif.h"
 #endif
 
 namespace nvcomp {

@@ -32,7 +32,7 @@
 #include "type_macros.h"
 
 #ifdef ENABLE_BITCOMP
-#include <bitcomp.h>
+#include "lib/include/bitcomp.h"
 
 #define BTCHK(call)                                                            \
   {                                                                            \

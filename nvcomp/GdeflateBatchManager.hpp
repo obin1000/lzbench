@@ -39,7 +39,7 @@
 #include "BatchManager.hpp"
 
 #ifdef ENABLE_GDEFLATE
-#include "GdeflateHlifKernels.h"
+#include "lib/include/GdeflateHlifKernels.h"
 #endif
 
 namespace nvcomp {

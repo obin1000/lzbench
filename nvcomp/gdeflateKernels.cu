@@ -38,7 +38,7 @@
 #include <cassert>
 
 #ifdef ENABLE_GDEFLATE
-#include "gdeflate.h"
+#include "lib/include/gdeflate.h"
 #include "gdeflateKernels.h"
 
 namespace nvcomp
