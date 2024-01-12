@@ -101,9 +101,6 @@ typedef struct
     int random_read;
     std::vector<string_table_t> results;
     const char* in_filename;
-#ifdef BENCH_HAS_CUDA
-    int gpu_id;
-#endif  // BENCH_HAS_CUDA
 } lzbench_params_t;
 
 struct less_using_1st_column { inline bool operator() (const string_table_t& struct1, const string_table_t& struct2) {  return (struct1.col1_algname < struct2.col1_algname); } };
@@ -213,13 +210,13 @@ static const compressor_desc_t comp_desc[LZBENCH_COMPRESSOR_COUNT] =
     { "zstd22LDM",  "1.5.5",       1,  22,   22,       0, lzbench_zstd_LDM_compress,   lzbench_zstd_decompress,       lzbench_zstd_LDM_init,   lzbench_zstd_deinit },
     { "zstd24LDM",  "1.5.5",       1,  22,   24,       0, lzbench_zstd_LDM_compress,   lzbench_zstd_decompress,       lzbench_zstd_LDM_init,   lzbench_zstd_deinit },
     { "nakamichi",  "okamigan",    0,   0,    0,       0, lzbench_nakamichi_compress,  lzbench_nakamichi_decompress,  NULL,                    NULL },
-    { "cudaMemcpy", "",            0,   0,    0,       0, lzbench_cuda_return_0,       lzbench_cuda_memcpy,           lzbench_cuda_init,            lzbench_cuda_deinit },
-    { "nvcomp_lz4",      "2.2.0",  0,   5,    0,       0, lzbench_nvcomp_compress,     lzbench_nvcomp_decompress,     lzbench_nvcomp_lz4_init,      lzbench_nvcomp_deinit },
-    { "nvcomp_snappy",   "2.2.0",  0,   5,    0,       0, lzbench_nvcomp_compress,     lzbench_nvcomp_decompress,     lzbench_nvcomp_snappy_init,   lzbench_nvcomp_deinit },
-    { "nvcomp_ans",      "2.2.0",  0,   5,    0,       0, lzbench_nvcomp_compress,     lzbench_nvcomp_decompress,     lzbench_nvcomp_ans_init,      lzbench_nvcomp_deinit },
-    { "nvcomp_bitcomp",  "2.2.0",  0,   5,    0,       0, lzbench_nvcomp_compress,     lzbench_nvcomp_decompress,     lzbench_nvcomp_bitcomp_init,  lzbench_nvcomp_deinit },
-    { "nvcomp_cascaded", "2.2.0",  0,   5,    0,       0, lzbench_nvcomp_compress,     lzbench_nvcomp_decompress,     lzbench_nvcomp_cascaded_init, lzbench_nvcomp_deinit },
-    { "nvcomp_gdeflate", "2.2.0",  0,   5,    0,       0, lzbench_nvcomp_compress,     lzbench_nvcomp_decompress,     lzbench_nvcomp_gdeflate_init, lzbench_nvcomp_deinit },
+    { "cudaMemcpy", "",            0,   0,    0,       0, lzbench_cuda_return_0,       lzbench_cuda_memcpy,           lzbench_cuda_init,       lzbench_cuda_deinit },
+    { "nvcomp_lz4",      "2.2.0",  0,   5, NVCOMP_LZ4,      0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress,    lzbench_nvcomp_init,     lzbench_nvcomp_deinit },
+    { "nvcomp_snappy",   "2.2.0",  0,   5, NVCOMP_SNAPPY,   0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress,    lzbench_nvcomp_init,     lzbench_nvcomp_deinit },
+    { "nvcomp_ans",      "2.2.0",  0,   5, NVCOMP_ANS,      0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress,    lzbench_nvcomp_init,     lzbench_nvcomp_deinit },
+    { "nvcomp_bitcomp",  "2.2.0",  0,   5, NVCOMP_BITCOMP,  0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress,    lzbench_nvcomp_init,     lzbench_nvcomp_deinit },
+    { "nvcomp_cascaded", "2.2.0",  0,   5, NVCOMP_CASCADED, 0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress,    lzbench_nvcomp_init,     lzbench_nvcomp_deinit },
+    { "nvcomp_gdeflate", "2.2.0",  0,   5, NVCOMP_GDEFLATE, 0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress,    lzbench_nvcomp_init,     lzbench_nvcomp_deinit },
 };
 
 

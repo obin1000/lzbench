@@ -1797,15 +1797,6 @@ int64_t lzbench_cuda_return_0(char *inbuf, size_t insize, char *outbuf, size_t o
 #include "nvcomp/cascaded.hpp"
 #include "nvcomp/gdeflate.hpp"
 
-
-enum nvcomp_compressor{
-        NVCOMP_ANS,
-        NVCOMP_BITCOMP,
-        NVCOMP_CASCADED,
-        NVCOMP_GDEFLATE,
-        NVCOMP_LZ4,
-        NVCOMP_SNAPPY};
-
 typedef struct {
     cudaStream_t stream;
     uint8_t* device_input_ptrs;
@@ -1815,18 +1806,23 @@ typedef struct {
   } nvcomp_params_s;
 
 
-// allocate the host and device memory buffers for the nvcom LZ4 compression and decompression
+// allocate the host and device memory buffers for the nvcomp compression and decompression
 // the chunk size is configured by the compression level, 0 to 5 inclusive, corresponding to a chunk size from 32 kB to 1 MB
-nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_compressor compressor_type) {
+char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
     // allocate the host memory for the algorithm options
     auto* nvcomp_params = (nvcomp_params_s*) malloc(sizeof(nvcomp_params_s));
     if (!nvcomp_params) return nullptr;
+
+    int device;
+    cudaError_t cuda_status = cudaGetDevice(&device);
+    assert (cuda_status == cudaSuccess);
+
+    auto compressor_type = static_cast<nvcomp_compressor>(param);
     // set the chunk size based on the compression level
     size_t chunk_size = 1 << (15 + level);
     nvcompType_t data_type = NVCOMP_TYPE_CHAR;
-    int status = 0;
 
-    status = cudaStreamCreate(&nvcomp_params->stream);
+    int status = cudaStreamCreate(&nvcomp_params->stream);
     assert(status == cudaSuccess);
 
     status = cudaMalloc(&nvcomp_params->device_input_ptrs, insize);
@@ -1836,38 +1832,37 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
       case NVCOMP_ANS:
         nvcomp_params->nvcomp_manager = new nvcomp::ANSManager(chunk_size,
                                                                nvcomp_params->stream,
-                                                               0);
+                                                               device);
         break;
       case NVCOMP_BITCOMP:
         nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(NVCOMP_TYPE_CHAR,
                                                                0,
                                                                nvcomp_params->stream,
-                                                               0);
+                                                               device);
         break;
       case NVCOMP_CASCADED: {
         nvcompBatchedCascadedOpts_t cascaded_conf{chunk_size, data_type, 2, 1, 1};
         nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(cascaded_conf,
                                                                     nvcomp_params->stream,
-                                                                    0);
+                                                                    device);
       }
         break;
       case NVCOMP_GDEFLATE:
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
                                                                0,
                                                                nvcomp_params->stream,
-                                                               0);
+                                                               device);
         break;
       case NVCOMP_SNAPPY:
         nvcomp_params->nvcomp_manager = new nvcomp::SnappyManager(chunk_size,
                                                                   nvcomp_params->stream,
-                                                                  0);
+                                                                  device);
         break;
-      default:
       case NVCOMP_LZ4:
         nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(chunk_size,
                                                                data_type,
                                                                nvcomp_params->stream,
-                                                               0);
+                                                               device);
         break;
     }
 
@@ -1879,7 +1874,7 @@ nvcomp_params_s* lzbench_nvcomp_init(const size_t insize, size_t level, nvcomp_c
     auto decomp_config = nvcomp_params->nvcomp_manager->configure_decompression(comp_config);
     status = cudaMalloc(&nvcomp_params->res_decomp_buffer, decomp_config.decomp_data_size);
     assert(status == cudaSuccess);
-    return nvcomp_params;
+    return (char *) nvcomp_params;
 }
 
 void lzbench_nvcomp_deinit(char* params) {
@@ -1934,36 +1929,6 @@ int64_t lzbench_nvcomp_decompress(char *inbuf, size_t insize, char *outbuf, size
     assert(status == cudaSuccess);
 
     return decomp_config.decomp_data_size;
-}
-
-char* lzbench_nvcomp_ans_init(const size_t insize, size_t level, size_t)
-{
-  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_ANS);
-}
-
-char* lzbench_nvcomp_bitcomp_init(size_t insize, size_t level, size_t)
-{
-  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_BITCOMP);
-}
-
-char* lzbench_nvcomp_cascaded_init(const size_t insize, size_t level, size_t)
-{
-  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_CASCADED);
-}
-
-char* lzbench_nvcomp_gdeflate_init(size_t insize, size_t level, size_t)
-{
-  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_GDEFLATE);
-}
-
-char* lzbench_nvcomp_lz4_init(const size_t insize, size_t level, size_t)
-{
-  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_LZ4);
-}
-
-char* lzbench_nvcomp_snappy_init(size_t insize, size_t level, size_t)
-{
-  return (char*) lzbench_nvcomp_init(insize, level, NVCOMP_SNAPPY);
 }
 
 #endif  // BENCH_HAS_NVCOMP

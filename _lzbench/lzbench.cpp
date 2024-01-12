@@ -738,7 +738,7 @@ void usage(lzbench_params_t* params)
     fprintf(stderr, " -c#   sort results by column # (1=algname, 2=ctime, 3=dtime, 4=comprsize)\n");
     fprintf(stderr, " -e#   #=compressors separated by '/' with parameters specified after ',' (deflt=fast)\n");
 #ifdef BENCH_HAS_CUDA
-    fprintf(stderr, " -g#   use GPU with id # (default = %u)\n", params->gpu_id);
+    fprintf(stderr, " -g#   use GPU with id # (default = 0)\n");
 #endif  // BENCH_HAS_CUDA
     fprintf(stderr, " -iX,Y set min. number of compression and decompression iterations (default = %d, %d)\n", params->c_iters, params->d_iters);
     fprintf(stderr, " -j    join files in memory but compress them independently (for many small files)\n");
@@ -792,16 +792,11 @@ char* cpu_brand_string(void)
 }
 
 #ifdef BENCH_HAS_CUDA
-char* gpu_brand_string(int gpu_id)
+char* gpu_brand_string(void)
 {
   char* output;
   int device;
-  cudaError_t cuda_status = cudaSetDevice(gpu_id);
-  if (cuda_status != cudaSuccess) {
-    asprintf(&output, "Error finding CUDA device: %s\n", cudaGetErrorString(cuda_status));
-    return output;
-  }
-  cuda_status = cudaGetDevice(&device);
+  cudaError_t cuda_status = cudaGetDevice(&device);
   if (cuda_status != cudaSuccess) {
     asprintf(&output, "Error finding CUDA device: %s\n", cudaGetErrorString(cuda_status));
     return output;
@@ -845,6 +840,7 @@ int main( int argc, char** argv)
     bool join = false;
     char* cpu_brand;
 #ifdef BENCH_HAS_CUDA
+    int gpu_id = 0;
     char* gpu_brand;
 #endif  // BENCH_HAS_CUDA
 
@@ -870,9 +866,6 @@ int main( int argc, char** argv)
     params->cmintime = 10*DEFAULT_LOOP_TIME/1000000; // 1 sec
     params->dmintime = 20*DEFAULT_LOOP_TIME/1000000; // 2 sec
     params->cloop_time = params->dloop_time = DEFAULT_LOOP_TIME;
-#ifdef BENCH_HAS_CUDA
-    params->gpu_id = 0;
-#endif  // BENCH_HAS_CUDA
 
   while ((argc>1) && (argv[1][0]=='-')) {
     char* argument = argv[1]+1;
@@ -895,7 +888,7 @@ int main( int argc, char** argv)
             break;
 #ifdef BENCH_HAS_CUDA
         case 'g':
-            params->gpu_id = number;
+            gpu_id = number;
             break;
 #endif  // BENCH_HAS_CUDA
         case 'i':
@@ -1001,8 +994,12 @@ int main( int argc, char** argv)
   cpu_brand = cpu_brand_string();
   LZBENCH_PRINT(2, "%s\n", cpu_brand);
 #ifdef BENCH_HAS_CUDA
-  gpu_brand = gpu_brand_string(params->gpu_id);
-  LZBENCH_PRINT(2, "%s\n\n", gpu_brand);
+  if (cudaError_t cuda_status = cudaSetDevice(gpu_id); cuda_status == cudaSuccess) {
+    gpu_brand = gpu_brand_string();
+    LZBENCH_PRINT(2, "%s\n\n", gpu_brand);
+  } else {
+    LZBENCH_PRINT(2, "Error finding CUDA device: %s\n\n", cudaGetErrorString(cuda_status));
+  }
 #endif  // BENCH_HAS_CUDA
   LZBENCH_PRINT(5, "params: chunk_size=%d c_iters=%d d_iters=%d cspeed=%d cmintime=%d dmintime=%d encoder_list=%s\n", (int)params->chunk_size, params->c_iters, params->d_iters, params->cspeed, params->cmintime, params->dmintime, encoder_list);
 

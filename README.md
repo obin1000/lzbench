@@ -27,6 +27,7 @@ where [input] is a file or a directory and [options] are:
  -b#   set block/chunk size to # KB (default = MIN(filesize,1747626 KB))
  -c#   sort results by column # (1=algname, 2=ctime, 3=dtime, 4=comprsize)
  -e#   #=compressors separated by '/' with parameters specified after ',' (deflt=fast)
+ -g#   use GPU with id # (default = 0)
  -iX,Y set min. number of compression and decompression iterations (default = 1, 1)
  -j    join files in memory but compress them independently (for many small files)
  -l    list of available compressors and aliases
