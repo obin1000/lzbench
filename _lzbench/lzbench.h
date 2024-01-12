@@ -101,6 +101,9 @@ typedef struct
     int random_read;
     std::vector<string_table_t> results;
     const char* in_filename;
+#ifdef BENCH_HAS_CUDA
+    int gpu_id;
+#endif  // BENCH_HAS_CUDA
 } lzbench_params_t;
 
 struct less_using_1st_column { inline bool operator() (const string_table_t& struct1, const string_table_t& struct2) {  return (struct1.col1_algname < struct2.col1_algname); } };
