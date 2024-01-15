@@ -302,13 +302,12 @@ endif
 ifneq "$(LIBCUDART)" ""
 ifneq "$(DONT_BUILD_NVCOMP)" "1"
     DEFINES += -DBENCH_HAS_NVCOMP
-    LDFLAGS += -L./nvcomp/lib -l:libans.a -l:libbitcomp.a -l:libgdeflate.a
+    LDFLAGS += -L./nvcomp -l:libnvcomp_device.a -Wl,-rpath=./nvcomp nvcomp/libnvcomp.so nvcomp/libnvcomp_bitcomp.so nvcomp/libnvcomp_gdeflate.so
     NVCOMP_CPP_SRC = $(wildcard nvcomp/*.cpp)
     NVCOMP_CPP_OBJ = $(NVCOMP_CPP_SRC:%=%.o)
     NVCOMP_CU_SRC  = $(wildcard nvcomp/*.cu)
     NVCOMP_CU_OBJ  = $(NVCOMP_CU_SRC:%=%.o)
     NVCOMP_FILES   = $(NVCOMP_CU_OBJ) $(NVCOMP_CPP_OBJ)
-    NVCOMP_DEFINES = -DENABLE_ANS -DENABLE_BITCOMP -DENABLE_GDEFLATE
 endif
 endif
 
@@ -347,7 +346,7 @@ $(NVCOMP_CU_OBJ): %.cu.o: %.cu
 
 $(NVCOMP_CPP_OBJ): %.cpp.o: %.cpp
 	@$(MKDIR) $(dir $@)
-	$(CXX) $(CFLAGS) $(NVCOMP_DEFINES) -c $< -o $@
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 # disable the implicit rule for making a binary out of a single object file
 %: %.o

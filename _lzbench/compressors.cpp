@@ -1829,17 +1829,27 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
     assert(status == cudaSuccess);
 
     switch (compressor_type) {
-      case NVCOMP_ANS:
+      case NVCOMP_ANS: {
+        nvcompBatchedANSOpts_t ans_options{nvcomp_rANS};
         nvcomp_params->nvcomp_manager = new nvcomp::ANSManager(chunk_size,
+                                                               ans_options,
                                                                nvcomp_params->stream,
-                                                               device);
-        break;
-      case NVCOMP_BITCOMP:
-        nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(NVCOMP_TYPE_CHAR,
-                                                               level,
-                                                               nvcomp_params->stream,
-                                                               device);
-        break;
+                                                               device,
+                                                               NoComputeNoVerify);
+      } break;
+      case NVCOMP_BITCOMP: {
+        int bitcomp_algo = 1;
+        if (level > 5) {
+          bitcomp_algo = 0;
+          chunk_size = chunk_size >> 6;
+        }
+        nvcompBatchedBitcompFormatOpts bitcomp_options{bitcomp_algo, data_type};
+        nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(chunk_size,
+                                                                   bitcomp_options,
+                                                                   nvcomp_params->stream,
+                                                                   device,
+                                                                   NoComputeNoVerify);
+      } break;
       case NVCOMP_CASCADED: {
         int num_RLE = 0;
         int num_delta = 0;
@@ -1862,27 +1872,41 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
           } break;
         }
         nvcompBatchedCascadedOpts_t cascaded_conf{4096, data_type, num_RLE, num_delta, 1};
-        nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(cascaded_conf,
+        nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(chunk_size,
+                                                                    cascaded_conf,
                                                                     nvcomp_params->stream,
-                                                                    device);
+                                                                    device,
+                                                                    NoComputeNoVerify);
       } break;
-      case NVCOMP_GDEFLATE:
+      case NVCOMP_GDEFLATE: {
+        int gdeflate_algo = 2;
+        if (level > 1) {
+          gdeflate_algo = 0;
+          chunk_size = chunk_size >> 2;
+        }
+        nvcompBatchedGdeflateOpts_t gdeflate_options{gdeflate_algo};
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
-                                                               0,
-                                                               nvcomp_params->stream,
-                                                               device);
-        break;
-      case NVCOMP_SNAPPY:
+                                                                    gdeflate_options,
+                                                                    nvcomp_params->stream,
+                                                                    device,
+                                                                    NoComputeNoVerify);
+      } break;
+      case NVCOMP_SNAPPY: {
+        nvcompBatchedSnappyOpts_t snappy_options{0};
         nvcomp_params->nvcomp_manager = new nvcomp::SnappyManager(chunk_size,
+                                                                  snappy_options,
                                                                   nvcomp_params->stream,
-                                                                  device);
-        break;
-      case NVCOMP_LZ4:
+                                                                  device,
+                                                                  NoComputeNoVerify);
+      } break;
+      case NVCOMP_LZ4: {
+        nvcompBatchedLZ4Opts_t lz4_options{data_type};
         nvcomp_params->nvcomp_manager = new nvcomp::LZ4Manager(chunk_size,
-                                                               data_type,
+                                                               lz4_options,
                                                                nvcomp_params->stream,
-                                                               device);
-        break;
+                                                               device,
+                                                               NoComputeNoVerify);
+      } break;
     }
 
 

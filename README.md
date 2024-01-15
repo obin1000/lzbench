@@ -121,7 +121,7 @@ see the [CompFuzz Results](https://github.com/nemequ/compfuzz/wiki/Results) page
  - [zlib 1.2.11](http://zlib.net)
  - [zling 2018-10-12](https://github.com/richox/libzling) - according to the author using libzling in a production environment is not a good idea
  - [zstd 1.5.5](https://github.com/facebook/zstd)
- - [nvcomp 2.2.0](https://github.com/NVIDIA/nvcomp) - If CUDA is available.
+ - [nvcomp 3.0.5](https://github.com/NVIDIA/nvcomp) - If CUDA is available.
 
 
 CUDA support
@@ -129,12 +129,12 @@ CUDA support
 
 If CUDA is available, lzbench supports additional compressors:
   - [cudaMemcpy](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY.html#group__CUDART__MEMORY_1gc263dbe6574220cc776b45438fc351e8) - similar to the reference `memcpy` benchmark, using GPU memory
-  - [nvcomp_lz4 2.2.0](https://github.com/NVIDIA/nvcomp)
-  - [nvcomp_snappy 2.2.0](https://github.com/NVIDIA/nvcomp)
-  - [nvcomp_ans 2.2.0](https://github.com/NVIDIA/nvcomp)
-  - [nvcomp_bitcomp 2.2.0](https://github.com/NVIDIA/nvcomp)
-  - [nvcomp_cascaded 2.2.0](https://github.com/NVIDIA/nvcomp)
-  - [nvcomp_gdeflate 2.2.0](https://github.com/NVIDIA/nvcomp)
+  - [nvcomp_lz4 3.0.5](https://github.com/NVIDIA/nvcomp)
+  - [nvcomp_snappy 3.0.5](https://github.com/NVIDIA/nvcomp)
+  - [nvcomp_ans 3.0.5](https://github.com/NVIDIA/nvcomp)
+  - [nvcomp_bitcomp 3.0.5](https://github.com/NVIDIA/nvcomp)
+  - [nvcomp_cascaded 3.0.5](https://github.com/NVIDIA/nvcomp)
+  - [nvcomp_gdeflate 3.0.5](https://github.com/NVIDIA/nvcomp)
 
 The directory where the CUDA compiler and libraries are available can be passed to `make` via the `CUDA_BASE` variable, *e.g.*:
 ```
