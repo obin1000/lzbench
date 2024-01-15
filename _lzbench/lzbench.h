@@ -217,9 +217,9 @@ static const compressor_desc_t comp_desc[LZBENCH_COMPRESSOR_COUNT] =
     { "nvcomp_bitcomp_default",      "3.0.5",  0,   5, NVCOMP_BITCOMP_DEFAULT,      0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
     { "nvcomp_bitcomp_sparse",       "3.0.5",  0,   5, NVCOMP_BITCOMP_SPARSE,       0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
     { "nvcomp_cascaded",             "3.0.5",  0,   4, NVCOMP_CASCADED,             0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
-    { "nvcomp_gdeflate_throughput",  "3.0.5",  0,   5, NVCOMP_GDEFLATE_THROUGHPUT,  0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
-    { "nvcomp_gdeflate_compression", "3.0.5",  0,   5, NVCOMP_GDEFLATE_COMPRESSION, 0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
-    { "nvcomp_gdeflate_entropy",     "3.0.5",  0,   5, NVCOMP_GDEFLATE_ENTROPY,     0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
+    { "nvcomp_gdeflate_throughput",  "3.0.5",  0,   1, NVCOMP_GDEFLATE_THROUGHPUT,  0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
+    { "nvcomp_gdeflate_compression", "3.0.5",  0,   1, NVCOMP_GDEFLATE_COMPRESSION, 0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
+    { "nvcomp_gdeflate_entropy",     "3.0.5",  0,   1, NVCOMP_GDEFLATE_ENTROPY,     0, lzbench_nvcomp_compress, lzbench_nvcomp_decompress, lzbench_nvcomp_init, lzbench_nvcomp_deinit },
 
 };
 
@@ -257,7 +257,7 @@ static const alias_desc_t alias_desc[LZBENCH_ALIASES_COUNT] =
     { "lzo1y", "lzo1y,1,999" },
     { "lzo",   "lzo1/lzo1a/lzo1b/lzo1c/lzo1f/lzo1x/lzo1y/lzo1z/lzo2a" },
     { "ucl",   "ucl_nrv2b/ucl_nrv2d/ucl_nrv2e" },
-    { "cuda",  "cudaMemcpy/nvcomp_lz4,0,1,3,5/nvcomp_snappy,0,1,3,5/nvcomp_ans,0,1,3,5/nvcomp_bitcomp_default,0,1,3,5/nvcomp_bitcomp_sparse,0,1,3,5/nvcomp_cascaded,0,1,2,3,4/nvcomp_gdeflate_throughput,0,1,3,5/nvcomp_gdeflate_compression,0,1,3,5/nvcomp_gdeflate_entropy,0,1,3,5" },
+    { "cuda",  "cudaMemcpy/nvcomp_lz4,0,1,3,5/nvcomp_snappy,0,1,3,5/nvcomp_ans,0,1,3,5/nvcomp_bitcomp_default,0,1,3,5/nvcomp_bitcomp_sparse,0,1,3,5/nvcomp_cascaded,0,1,2,3,4/nvcomp_gdeflate_throughput,0,1/nvcomp_gdeflate_compression,0,1/nvcomp_gdeflate_entropy,0,1" },
 };
 
 #endif
