@@ -34,6 +34,36 @@ typedef enum nvcompStatus_t
   nvcompErrorInvalidValue = 10,
   nvcompErrorNotSupported = 11,
   nvcompErrorCannotDecompress = 12,
+  nvcompErrorBadChecksum = 13,
+  nvcompErrorCannotVerifyChecksums = 14,
+  nvcompErrorOutputBufferTooSmall = 15,
+  nvcompErrorWrongHeaderLength = 16,
+  nvcompErrorAlignment = 17,
+  nvcompErrorChunkSizeTooLarge = 18,
   nvcompErrorCudaError = 1000,
   nvcompErrorInternal = 10000,
 } nvcompStatus_t;
+
+enum ChecksumPolicy {
+  // During compression, do not compute checksums
+  // During decompression, do not verify checksums
+  NoComputeNoVerify = 0,
+  
+  // During compression, compute checksums
+  // During decompression, do not attempt to verify checksums
+  ComputeAndNoVerify = 1,
+
+  // During compression, do not compute checksums
+  // During decompression, verify checksums if they were included
+  NoComputeAndVerifyIfPresent = 2,
+
+  // During compression, compute checksums
+  // During decompression, verify checksums if they were included
+  ComputeAndVerifyIfPresent = 3,
+
+  // During compression, compute checksums
+  // During decompression, verify checksums
+  // A runtime error will be thrown upon configure_decompression if 
+  // checksums were not included in the compressed buffer.
+  ComputeAndVerify= 4
+};

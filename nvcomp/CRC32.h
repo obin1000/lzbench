@@ -1,7 +1,5 @@
-#pragma once
-
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2017-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,32 +25,46 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+ 
+#ifndef NVCOMP_CRC32_H
+#define NVCOMP_CRC32_H
 
-#include <memory>
+#include "nvcomp.h"
 
-#include "nvcompManager.hpp"
-#include "nvcomp/lz4.h"
+#include <cuda_runtime.h>
+#include <stdint.h>
 
-namespace nvcomp {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-struct LZ4FormatSpecHeader {
-  nvcompType_t data_type;
-};
+/******************************************************************************
+ * Batched compute interface for CRC32
+ *****************************************************************************/
 
 /**
- * @brief High-level interface class for LZ4 compressor
+ * @brief Perform CRC32 checksum calculation asynchronously. All pointers must point to GPU
+ * accessible locations.
  *
- * @note Any uncompressed data buffer to be compressed MUST be a size that is a
- * multiple of the data type size, else compression may crash or result in
- * invalid output.
+ * @param device_uncompressed_ptrs The pointers on the GPU, to uncompressed batched items.
+ * This pointer must be GPU accessible.
+ * @param device_uncompressed_bytes The size of each uncompressed batch item on the GPU.
+ * @param batch_size The number of chunks to compress.
+ * @param device_compressed_ptrs The pointers on the GPU, to the output location for
+ * each CRC32 checksum (output). This pointer must be GPU accessible.
+ * @param stream The CUDA stream to operate on.
+ *
+ * @return nvcompSuccess if successfully launched, and an error code otherwise.
  */
-struct LZ4Manager : PimplManager {
+nvcompStatus_t nvcompBatchedCRC32Async(
+    const void* const* device_uncompressed_ptrs,
+    const size_t* device_uncompressed_bytes,
+    size_t batch_size,
+    uint32_t* device_CRC32_ptrs,
+    cudaStream_t stream);
 
-  LZ4Manager(
-    size_t uncomp_chunk_size, const nvcompBatchedLZ4Opts_t& format_opts = nvcompBatchedLZ4DefaultOpts, 
-    cudaStream_t user_stream = 0, const int device_id = 0, ChecksumPolicy checksum_policy = NoComputeNoVerify);
 
-  ~LZ4Manager();
-};
-
-} // namespace nvcomp
+#ifdef __cplusplus
+}
+#endif
+#endif // NVCOMP_CRC32_H

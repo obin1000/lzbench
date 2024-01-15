@@ -35,9 +35,18 @@
 
 namespace nvcomp {
 
+struct GdeflateFormatSpecHeader {
+    int algo;
+};
+
+/**
+ * @brief High-level interface class for GDeflate compressor
+ */
 struct GdeflateManager : PimplManager {
 
-  GdeflateManager(size_t uncomp_chunk_size, int algo, cudaStream_t user_stream = 0, const int device_id = 0);
+  GdeflateManager(
+    size_t uncomp_chunk_size, const nvcompBatchedGdeflateOpts_t& format_opts, 
+    cudaStream_t user_stream = 0, const int device_id = 0, ChecksumPolicy checksum_policy = NoComputeNoVerify);
 
   ~GdeflateManager();
 };

@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2020-2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,31 +28,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <memory>
-
 #include "nvcompManager.hpp"
-#include "nvcomp/lz4.h"
+#include "nvcomp/deflate.h"
 
 namespace nvcomp {
 
-struct LZ4FormatSpecHeader {
-  nvcompType_t data_type;
+struct DeflateFormatSpecHeader {
+    int algo;
 };
 
 /**
- * @brief High-level interface class for LZ4 compressor
- *
- * @note Any uncompressed data buffer to be compressed MUST be a size that is a
- * multiple of the data type size, else compression may crash or result in
- * invalid output.
+ * @brief High-level interface class for Deflate compressor
  */
-struct LZ4Manager : PimplManager {
+struct DeflateManager : PimplManager {
 
-  LZ4Manager(
-    size_t uncomp_chunk_size, const nvcompBatchedLZ4Opts_t& format_opts = nvcompBatchedLZ4DefaultOpts, 
+  DeflateManager(
+    size_t uncomp_chunk_size, const nvcompBatchedDeflateOpts_t& format_opts,
     cudaStream_t user_stream = 0, const int device_id = 0, ChecksumPolicy checksum_policy = NoComputeNoVerify);
 
-  ~LZ4Manager();
+  ~DeflateManager();
 };
 
 } // namespace nvcomp

@@ -53,11 +53,20 @@ typedef struct
 
 static const nvcompBatchedANSOpts_t nvcompBatchedANSDefaultOpts = {nvcomp_rANS};
 
+const size_t nvcompANSCompressionMaxAllowedChunkSize = 1 << 24;
+
+/**
+ * This is the minimum alignment required for void type CUDA memory buffers
+ * passed to compression or decompression functions.  Typed memory buffers must
+ * still be aligned to their type's size, e.g. 8 bytes for size_t.
+ */
+const size_t nvcompANSRequiredAlignment = 8;
+
 /**
  * @brief Get temporary space required for compression.
  *
  * @param batch_size The number of items in the batch.
- * @param max_chunk_size The maximum size of a chunk in the batch.
+ * @param max_uncompressed_chunk_bytes The maximum size of a chunk in the batch.
  * @param format_opts Compression options.
  * @param temp_bytes The size of the required GPU workspace for compression
  * (output).
@@ -66,9 +75,29 @@ static const nvcompBatchedANSOpts_t nvcompBatchedANSDefaultOpts = {nvcomp_rANS};
  */
 nvcompStatus_t nvcompBatchedANSCompressGetTempSize(
     size_t batch_size,
-    size_t max_chunk_size,
+    size_t max_uncompressed_chunk_bytes,
     nvcompBatchedANSOpts_t format_opts,
     size_t* temp_bytes);
+
+/**
+ * @brief Get temporary space required for compression.
+ *
+ * @param batch_size The number of items in the batch.
+ * @param max_uncompressed_chunk_bytes The maximum size of a chunk in the batch.
+ * @param format_opts Compression options.
+ * @param temp_bytes The size of the required GPU workspace for compression
+ * (output).
+ * @param max_total_uncompressed_bytes Upper bound on the total uncompressed size of all
+ * chunks
+ *
+ * @return nvcompSuccess if successful, and an error code otherwise.
+ */
+nvcompStatus_t nvcompBatchedANSCompressGetTempSizeEx(
+    size_t batch_size,
+    size_t max_uncompressed_chunk_bytes,
+    nvcompBatchedANSOpts_t format_opts,
+    size_t* temp_bytes,
+    const size_t max_total_uncompressed_bytes);
 
 /**
  * @brief Get the maximum size any chunk could compress to in the batch. That
@@ -93,13 +122,15 @@ nvcompStatus_t nvcompBatchedANSCompressGetMaxOutputChunkSize(
  * The caller is responsible for passing device_compressed_bytes of size
  * sufficient to hold compressed data
  *
- * @param device_uncompressed_ptr The pointers on the GPU, to uncompressed batched items.
+ * @param device_uncompressed_ptrs The pointers on the GPU, to uncompressed batched items.
+ * Each pointer must be aligned to a 4-byte boundary.
  * @param device_uncompressed_bytes The size of each uncompressed batch item on the GPU.
  * @param max_uncompressed_chunk_bytes The size of the largest uncompressed chunk.
  * @param batch_size The number of batch items.
  * @param device_temp_ptr The temporary GPU workspace, could be NULL in case temprorary space is not needed.
  * @param temp_bytes The size of the temporary GPU workspace.
- * @param device_compressed_ptr The pointers on the GPU, to the output location for each compressed batch item (output).
+ * @param device_compressed_ptrs The pointers on the GPU, to the output location for each compressed batch item (output).
+ * Each pointer must be aligned to an 8-byte boundary.
  * @param device_compressed_bytes The compressed size of each chunk on the GPU (output).
  * @param format_opts Compression options.
  * @param stream The stream to operate on.
@@ -107,13 +138,13 @@ nvcompStatus_t nvcompBatchedANSCompressGetMaxOutputChunkSize(
  * @return nvcompSuccess if successfully launched, and an error code otherwise.
  */
 nvcompStatus_t nvcompBatchedANSCompressAsync(
-    const void* const* device_uncompressed_ptr,
+    const void* const* device_uncompressed_ptrs,
     const size_t* device_uncompressed_bytes,
     size_t max_uncompressed_chunk_bytes,
     size_t batch_size,
     void* device_temp_ptr,
     size_t temp_bytes,
-    void* const* device_compressed_ptr,
+    void* const* device_compressed_ptrs,
     size_t* device_compressed_bytes,
     nvcompBatchedANSOpts_t format_opts,
     cudaStream_t stream);
@@ -131,6 +162,15 @@ nvcompStatus_t nvcompBatchedANSCompressAsync(
  */
 nvcompStatus_t nvcompBatchedANSDecompressGetTempSize(
     size_t num_chunks, size_t max_uncompressed_chunk_bytes, size_t* temp_bytes);
+
+/**
+ * @brief Get the amount of temp space required on the GPU for decompression with extra total size argument.
+ * @param max_uncompressed_total_size  The total decompressed size of all the chunks. Unused in ANS.
+ *
+ * @return nvcompSuccess if successful, and an error code otherwise.
+ */
+nvcompStatus_t nvcompBatchedANSDecompressGetTempSizeEx(
+    size_t num_chunks, size_t max_uncompressed_chunk_bytes, size_t* temp_bytes, size_t max_uncompressed_total_size );    
 
 /**
  * @brief Compute uncompressed sizes.
@@ -153,14 +193,15 @@ nvcompStatus_t nvcompBatchedANSGetDecompressSizeAsync(
 /**
  * @brief Perform decompression.
  *
- * @param device_compresed_ptrs The pointers on the GPU, to the compressed chunks.
+ * @param device_compresed_ptrs The pointers on the GPU, to the compressed chunks. 
+ * Each pointer must be aligned to an 8-byte boundary.
  * @param device_compressed_bytes The size of each compressed chunk on the GPU.
- * @param device_uncompressed_bytes The size of each device_uncompressed_ptr[i] buffer.
+ * @param device_uncompressed_bytes The size of each device_uncompressed_ptrs[i] buffer.
  * @param device_actual_uncompressed_bytes The actual size of each uncompressed chunk
  * @param batch_size The number of batch items.
  * @param device_temp_ptr The temporary GPU space, could be NULL in case temporary space is not needed.
  * @param temp_bytes The size of the temporary GPU space.
- * @param device_uncompressed_ptr The pointers on the GPU, to where to uncompress each chunk (output).
+ * @param device_uncompressed_ptrs The pointers on the GPU, to where to uncompress each chunk (output).
  * @param device_statuses The pointers on the GPU, to where to uncompress each chunk (output).
  * @param stream The stream to operate on.
  *
@@ -174,7 +215,7 @@ nvcompStatus_t nvcompBatchedANSDecompressAsync(
     size_t batch_size,
     void* const device_temp_ptr,
     const size_t temp_bytes,
-    void* const* device_uncompressed_ptr,
+    void* const* device_uncompressed_ptrs,
     nvcompStatus_t* device_statuses,
     cudaStream_t stream);
 

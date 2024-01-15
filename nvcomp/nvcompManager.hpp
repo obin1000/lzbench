@@ -28,16 +28,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "nvcomp.h"
+
 #include <memory>
 #include <vector>
-
-#include "nvcomp.h"
+#include <functional>
+#include <stdint.h>
 
 namespace nvcomp {
 
 /******************************************************************************
  * CLASSES ********************************************************************
  *****************************************************************************/
+
+
+typedef std::function<void*(size_t)> AllocFn_t;
+typedef std::function<void(void*, size_t)> DeAllocFn_t;
 
 /**
  * Internal memory pool used for compression / decompression configs
@@ -61,6 +67,7 @@ public: // API
   size_t uncompressed_buffer_size;
   size_t max_compressed_buffer_size;
   size_t num_chunks;
+  bool compute_checksums;
 
   /**
    * @brief Construct the config given an nvcompStatus_t memory pool
@@ -94,7 +101,8 @@ private: // pimpl to hide pool implementation
 
 public: // API
   size_t decomp_data_size;
-  uint32_t num_chunks;
+  size_t num_chunks;
+  bool checksums_present;
 
   /**
    * @brief Construct the config given an nvcompStatus_t memory pool
@@ -127,7 +135,8 @@ struct nvcompManagerBase {
    * @param decomp_buffer_size The uncompressed input data size.
    * \return comp_config Result
    */
-  virtual CompressionConfig configure_compression(const size_t decomp_buffer_size) = 0;
+  virtual CompressionConfig configure_compression(
+    const size_t decomp_buffer_size) = 0;
 
   /**
    * @brief Perform compression asynchronously.
@@ -151,7 +160,8 @@ struct nvcompManagerBase {
    * @param comp_buffer The compressed input data (GPU accessible).
    * \return decomp_config Result
    */
-  virtual DecompressionConfig configure_decompression(const uint8_t* comp_buffer) = 0;
+  virtual DecompressionConfig configure_decompression(
+    const uint8_t* comp_buffer) = 0;
 
   /**
    * @brief Configure the decompression using a CompressionConfig object. 
@@ -163,7 +173,8 @@ struct nvcompManagerBase {
    * @param comp_config The config used to compress a buffer
    * \return decomp_config Result
    */
-  virtual DecompressionConfig configure_decompression(const CompressionConfig& comp_config) = 0;
+  virtual DecompressionConfig configure_decompression(
+    const CompressionConfig& comp_config) = 0;
 
   /**
    * @brief Perform decompression asynchronously.
@@ -179,27 +190,22 @@ struct nvcompManagerBase {
       const DecompressionConfig& decomp_config) = 0;
   
   /**
-   * @brief Allows the user to provide a user-allocated scratch buffer.
+   * @brief Allows the user to provide a function for allocating / deallocating memory
    * 
-   * If this routine is not called before compression / decompression is called, the manager
-   * allocates the required scratch buffer. If this is called after the manager has allocated a 
-   * scratch buffer, the manager frees the scratch buffer it allocated then switches to use 
-   * the new user-provided one.
+   * The HLIF manager requires scratch memory to perform its operations. 
+   * By default, it will use internal allocators which make use of 
+   * cudaMallocAsync / cudaFreeAsync
+   * The user can override the allocation functions with this API. 
+   * The required signatures are
+   *   void alloc_fn(size_t alloc_size)
+   * and
+   *   void dealloc_fn(size_t alloc_size)
    * 
-   * @param new_scratch_buffer The location (GPU accessible) to use for comp/decomp scratch space
+   * @param alloc_fn The host function to use to alloc a new scratch result buffer
+   * @param dealloc_fn The host function to use to dealloc a scratch result buffer
    * 
    */
-  virtual void set_scratch_buffer(uint8_t* new_scratch_buffer) = 0;
-
-  /** 
-   * @brief Computes the size of the required scratch space
-   * 
-   * This scratch space size is constant and based on the configuration of the manager and the 
-   * maximum occupancy on the device.
-   * 
-   * \return The required scratch buffer size
-   */ 
-  virtual size_t get_required_scratch_buffer_size() = 0;
+  virtual void set_scratch_allocators(const AllocFn_t& alloc_fn, const DeAllocFn_t& dealloc_fn) = 0;
   
   /** 
    * @brief Computes the compressed output size of a given buffer 
@@ -263,14 +269,9 @@ public:
     return impl->decompress(decomp_buffer, comp_buffer, decomp_config);
   }
  
-  virtual void set_scratch_buffer(uint8_t* new_scratch_buffer)
+  virtual void set_scratch_allocators(const AllocFn_t& alloc_fn, const DeAllocFn_t& dealloc_fn)
   {
-    return impl->set_scratch_buffer(new_scratch_buffer);
-  }
-
-  virtual size_t get_required_scratch_buffer_size()
-  {
-    return impl->get_required_scratch_buffer_size();
+    return impl->set_scratch_allocators(alloc_fn, dealloc_fn);
   }
 
   virtual size_t get_compressed_output_size(uint8_t* comp_buffer)

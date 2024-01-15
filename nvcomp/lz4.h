@@ -62,6 +62,15 @@ typedef struct
 
 static const nvcompBatchedLZ4Opts_t nvcompBatchedLZ4DefaultOpts = {NVCOMP_TYPE_CHAR};
 
+const size_t nvcompLZ4CompressionMaxAllowedChunkSize = 1 << 24;
+
+/**
+ * This is the minimum alignment required for void type CUDA memory buffers
+ * passed to compression or decompression functions.  Typed memory buffers must
+ * still be aligned to their type's size, e.g. 8 bytes for size_t.
+ */
+const size_t nvcompLZ4RequiredAlignment = 4;
+
 /******************************************************************************
  * Batched compression/decompression interface
  *****************************************************************************/
@@ -87,6 +96,31 @@ nvcompStatus_t nvcompBatchedLZ4CompressGetTempSize(
     size_t max_uncompressed_chunk_bytes,
     nvcompBatchedLZ4Opts_t format_opts,
     size_t* temp_bytes);
+
+/**
+ * @brief Get temporary space required for compression.
+ *
+ * Chunk size must not exceed
+ * 16777216 bytes. For best performance, a chunk size of 65536 bytes is
+ * recommended.
+ *
+ * @param batch_size The number of items in the batch.
+ * @param max_uncompressed_chunk_bytes The maximum size of a chunk in the
+ * batch.
+ * @param format_opts The LZ4 compression options to use.
+ * @param temp_bytes The size of the required GPU workspace for compression
+ * (output).
+ * @param max_total_uncompressed_bytes Upper bound on the total uncompressed size of all
+ * chunks
+ *
+ * @return nvcompSuccess if successful, and an error code otherwise.
+ */
+nvcompStatus_t nvcompBatchedLZ4CompressGetTempSizeEx(
+    size_t batch_size,
+    size_t max_uncompressed_chunk_bytes,
+    nvcompBatchedLZ4Opts_t format_opts,
+    size_t* temp_bytes,
+    const size_t max_total_uncompressed_bytes);
 
 /**
  * @brief Get the maximum size any chunk could compress to in the batch. That
@@ -118,6 +152,8 @@ nvcompStatus_t nvcompBatchedLZ4CompressGetMaxOutputChunkSize(
  * @param device_uncompressed_ptrs The pointers on the GPU, to uncompressed batched items.
  * This pointer must be GPU accessible.
  * @param device_uncompressed_bytes The size of each uncompressed batch item on the GPU.
+ * Each chunk size MUST be a multiple of the size of the data type specified by
+ * format_opts.data_type, else this may crash or produce invalid output.
  * @param max_uncompressed_chunk_bytes The maximum size in bytes of the largest
  * chunk in the batch. This parameter is currently unused, so if it is not set
  * with the maximum size, it should be set to zero. If a future version makes
@@ -159,6 +195,23 @@ nvcompStatus_t nvcompBatchedLZ4CompressAsync(
  */
 nvcompStatus_t nvcompBatchedLZ4DecompressGetTempSize(
     size_t num_chunks, size_t max_uncompressed_chunk_bytes, size_t* temp_bytes);
+
+
+/**
+ * @brief Get the amount of temp space required on the GPU for decompression.
+ *
+ * @param num_chunks The number of items in the batch.
+ * @param max_uncompressed_chunk_bytes The size of the largest chunk in bytes
+ * when uncompressed.
+ * @param temp_bytes The amount of temporary GPU space that will be required to
+ * decompress.
+ * @param max_uncompressed_total_size  The total decompressed size of all the chunks. 
+ * Unused in lz4.
+ *
+ * @return nvcompSuccess if successful, and an error code otherwise.
+ */
+nvcompStatus_t nvcompBatchedLZ4DecompressGetTempSizeEx(
+    size_t num_chunks, size_t max_uncompressed_chunk_bytes, size_t* temp_bytes, size_t max_uncompressed_total_size );    
 
 /**
  * @brief Perform decompression asynchronously. All pointers must be GPU
