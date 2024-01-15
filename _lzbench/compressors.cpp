@@ -1837,13 +1837,16 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
                                                                device,
                                                                NoComputeNoVerify);
       } break;
-      case NVCOMP_BITCOMP: {
-        int bitcomp_algo = 1;
-        if (level > 5) {
-          bitcomp_algo = 0;
-          chunk_size = chunk_size >> 6;
-        }
-        nvcompBatchedBitcompFormatOpts bitcomp_options{bitcomp_algo, data_type};
+      case NVCOMP_BITCOMP_DEFAULT: {
+        nvcompBatchedBitcompFormatOpts bitcomp_options{0, data_type};
+        nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(chunk_size,
+                                                                   bitcomp_options,
+                                                                   nvcomp_params->stream,
+                                                                   device,
+                                                                   NoComputeNoVerify);
+      } break;
+      case NVCOMP_BITCOMP_SPARSE: {
+        nvcompBatchedBitcompFormatOpts bitcomp_options{1, data_type};
         nvcomp_params->nvcomp_manager = new nvcomp::BitcompManager(chunk_size,
                                                                    bitcomp_options,
                                                                    nvcomp_params->stream,
@@ -1878,13 +1881,24 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
                                                                     device,
                                                                     NoComputeNoVerify);
       } break;
-      case NVCOMP_GDEFLATE: {
-        int gdeflate_algo = 2;
-        if (level > 1) {
-          gdeflate_algo = 0;
-          chunk_size = chunk_size >> 2;
-        }
-        nvcompBatchedGdeflateOpts_t gdeflate_options{gdeflate_algo};
+      case NVCOMP_GDEFLATE_THROUGHPUT: {
+        nvcompBatchedGdeflateOpts_t gdeflate_options{0};
+        nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
+                                                                    gdeflate_options,
+                                                                    nvcomp_params->stream,
+                                                                    device,
+                                                                    NoComputeNoVerify);
+      } break;
+      case NVCOMP_GDEFLATE_COMPRESSION: {
+        nvcompBatchedGdeflateOpts_t gdeflate_options{1};
+        nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
+                                                                    gdeflate_options,
+                                                                    nvcomp_params->stream,
+                                                                    device,
+                                                                    NoComputeNoVerify);
+      } break;
+      case NVCOMP_GDEFLATE_ENTROPY: {
+        nvcompBatchedGdeflateOpts_t gdeflate_options{2};
         nvcomp_params->nvcomp_manager = new nvcomp::GdeflateManager(chunk_size,
                                                                     gdeflate_options,
                                                                     nvcomp_params->stream,

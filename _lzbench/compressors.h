@@ -496,6 +496,19 @@ int64_t lzbench_return_0(char *inbuf, size_t insize, char *outbuf, size_t outsiz
 	#define lzbench_nakamichi_decompress NULL
 #endif
 
+enum nvcomp_compressor{
+	NVCOMP_ANS,
+	NVCOMP_BITCOMP_DEFAULT,
+	NVCOMP_BITCOMP_SPARSE,
+	NVCOMP_CASCADED,
+	NVCOMP_GDEFLATE_THROUGHPUT,
+	NVCOMP_GDEFLATE_COMPRESSION,
+	NVCOMP_GDEFLATE_ENTROPY,
+	NVCOMP_DEFLATE,
+	NVCOMP_LZ4,
+	NVCOMP_SNAPPY,
+	NVCOMP_ZSTD,};
+
 #ifdef BENCH_HAS_CUDA
         char* lzbench_cuda_init(size_t insize, size_t, size_t);
         void lzbench_cuda_deinit(char* workmem);
@@ -509,29 +522,15 @@ int64_t lzbench_return_0(char *inbuf, size_t insize, char *outbuf, size_t outsiz
 #endif
 
 #ifdef BENCH_HAS_NVCOMP
-        enum nvcomp_compressor{
-            NVCOMP_ANS,
-            NVCOMP_BITCOMP,
-            NVCOMP_CASCADED,
-            NVCOMP_GDEFLATE,
-            NVCOMP_LZ4,
-            NVCOMP_SNAPPY};
         char* lzbench_nvcomp_init(size_t insize, size_t level, size_t);
         void lzbench_nvcomp_deinit(char* workmem);
         int64_t lzbench_nvcomp_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char* workmem);
         int64_t lzbench_nvcomp_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char* workmem);
-
 #else
+        #define lzbench_nvcomp_init NULL
         #define lzbench_nvcomp_deinit NULL
         #define lzbench_nvcomp_compress NULL
         #define lzbench_nvcomp_decompress NULL
-
-        #define lzbench_nvcomp_lz4_init NULL
-        #define lzbench_nvcomp_snappy_init NULL
-        #define lzbench_nvcomp_ans_init NULL
-        #define lzbench_nvcomp_gdeflate_init NULL
-        #define lzbench_nvcomp_bitcomp_init NULL
-        #define lzbench_nvcomp_cascaded_init NULL
 #endif
 
 #endif // LZBENCH_COMPRESSORS_H
