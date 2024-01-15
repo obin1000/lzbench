@@ -1796,6 +1796,8 @@ int64_t lzbench_cuda_return_0(char *inbuf, size_t insize, char *outbuf, size_t o
 #include "nvcomp/bitcomp.hpp"
 #include "nvcomp/cascaded.hpp"
 #include "nvcomp/gdeflate.hpp"
+#include "nvcomp/deflate.hpp"
+#include "nvcomp/zstd.hpp"
 
 typedef struct {
     cudaStream_t stream;
@@ -1807,7 +1809,6 @@ typedef struct {
 
 
 // allocate the host and device memory buffers for the nvcomp compression and decompression
-// the chunk size is configured by the compression level, 0 to 5 inclusive, corresponding to a chunk size from 32 kB to 1 MB
 char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
     // allocate the host memory for the algorithm options
     auto* nvcomp_params = (nvcomp_params_s*) malloc(sizeof(nvcomp_params_s));
@@ -1861,15 +1862,15 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
             num_RLE = 0;
             num_delta = 0;
           } break;
-          case 2: {
+          case 1: {
             num_RLE = 1;
             num_delta = 0;
           } break;
-          case 3: {
+          case 2: {
             num_RLE = 1;
             num_delta = 1;
           } break;
-          case 4: {
+          case 3: {
             num_RLE = 2;
             num_delta = 1;
           } break;
@@ -1920,6 +1921,38 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
                                                                nvcomp_params->stream,
                                                                device,
                                                                NoComputeNoVerify);
+      } break;
+      case NVCOMP_DEFLATE_THROUGHPUT: {
+        nvcompBatchedDeflateOpts_t deflate_options{0};
+        nvcomp_params->nvcomp_manager = new nvcomp::DeflateManager(chunk_size,
+                                                                   deflate_options,
+                                                                   nvcomp_params->stream,
+                                                                   device,
+                                                                   NoComputeNoVerify);
+      } break;
+      case NVCOMP_DEFLATE_COMPRESSION: {
+        nvcompBatchedDeflateOpts_t deflate_options{1};
+        nvcomp_params->nvcomp_manager = new nvcomp::DeflateManager(chunk_size,
+                                                                   deflate_options,
+                                                                   nvcomp_params->stream,
+                                                                   device,
+                                                                   NoComputeNoVerify);
+      } break;
+      case NVCOMP_DEFLATE_ENTROPY: {
+        nvcompBatchedDeflateOpts_t deflate_options{2};
+        nvcomp_params->nvcomp_manager = new nvcomp::DeflateManager(chunk_size,
+                                                                   deflate_options,
+                                                                   nvcomp_params->stream,
+                                                                   device,
+                                                                   NoComputeNoVerify);
+      } break;
+      case NVCOMP_ZSTD: {
+        nvcompBatchedZstdOpts_t zstd_options{0};
+        nvcomp_params->nvcomp_manager = new nvcomp::ZstdManager(chunk_size,
+                                                                zstd_options,
+                                                                nvcomp_params->stream,
+                                                                device,
+                                                                NoComputeNoVerify);
       } break;
     }
 
