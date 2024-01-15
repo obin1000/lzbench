@@ -253,7 +253,7 @@ static const alias_desc_t alias_desc[LZBENCH_ALIASES_COUNT] =
     { "lzo1y", "lzo1y,1,999" },
     { "lzo",   "lzo1/lzo1a/lzo1b/lzo1c/lzo1f/lzo1x/lzo1y/lzo1z/lzo2a" },
     { "ucl",   "ucl_nrv2b/ucl_nrv2d/ucl_nrv2e" },
-    { "cuda",  "cudaMemcpy/nvcomp_lz4,0,1,3,5/nvcomp_snappy,0,1,3,5/nvcomp_ans,0,1/nvcomp_bitcomp,0,1,2/nvcomp_cascaded,0,1,2,3,4/nvcomp_gdeflate,0,1" },
+    { "cuda",  "cudaMemcpy/nvcomp_lz4,0,1,3,5/nvcomp_snappy,0,1,3,5/nvcomp_ans,0,1/nvcomp_bitcomp,0,1/nvcomp_cascaded,0,1,2,3,4/nvcomp_gdeflate,0,1" },
 };
 
 #endif
