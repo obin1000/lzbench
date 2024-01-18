@@ -1820,7 +1820,7 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
 
     auto compressor_type = static_cast<nvcomp_compressor>(param);
     // set the chunk size based on the compression level
-    size_t chunk_size = 1 << (15 + level);
+    size_t chunk_size = 1 << (6 + level);
     nvcompType_t data_type = NVCOMP_TYPE_CHAR;
 
     int status = cudaStreamCreate(&nvcomp_params->stream);
@@ -1876,7 +1876,7 @@ char* lzbench_nvcomp_init(const size_t insize, size_t level, size_t param) {
           } break;
         }
         nvcompBatchedCascadedOpts_t cascaded_conf{4096, data_type, num_RLE, num_delta, 1};
-        nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(chunk_size,
+        nvcomp_params->nvcomp_manager = new nvcomp::CascadedManager(4096,
                                                                     cascaded_conf,
                                                                     nvcomp_params->stream,
                                                                     device,
