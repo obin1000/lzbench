@@ -1803,6 +1803,50 @@ int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t
     return fsst_decompress(&decoder, insize-hdr, data + hdr, outsize, reinterpret_cast<unsigned char*>(outbuf));
 }
 
+
+int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
+{
+    const size_t block_size = level*1024;
+    std::vector<unsigned char> compressionBuffer(16 + 2 * block_size);
+    size_t output_location = 0;
+    for (size_t input_location = 0 ; input_location < total_insize; input_location+=block_size) {
+        size_t insize;
+
+        if (input_location > total_insize) {
+            insize = input_location-total_insize;
+        } else {
+            insize = block_size;
+        }
+        char * inbuf = total_inbuf +input_location;
+        size_t compressedLen;
+        unsigned char *start_ptr;
+
+
+        auto inbuf_ptr = reinterpret_cast<const unsigned char **>(const_cast<const char **>(&inbuf));
+
+        auto encoder = fsst_create(1, &insize, inbuf_ptr, false);
+        unsigned char tmp[FSST_MAXHEADER];
+        size_t hdr = fsst_export(encoder, tmp);
+
+        auto num_compressed = fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(),
+                                            compressionBuffer.data(), &compressedLen, &start_ptr);
+
+        if (num_compressed < 1) return -1;
+        int size = compressedLen + hdr + 3;
+        FSST_SERIALIZE(size,outbuf + output_location); // block starts with size
+
+        output_location += 3;
+
+        std::copy(tmp, tmp + hdr, outbuf + output_location);
+        output_location += hdr;
+        fsst_destroy(encoder);
+
+        memcpy(outbuf + output_location, compressionBuffer.data(), compressedLen);
+        output_location += compressedLen;
+    }
+    return output_location;
+}
+
 #endif // BENCH_REMOVE_FSST
 
 #ifdef BENCH_HAS_CUDA
