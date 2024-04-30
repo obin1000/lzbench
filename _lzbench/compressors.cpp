@@ -1772,33 +1772,27 @@ int64_t lzbench_nakamichi_decompress(char *inbuf, size_t insize, char *outbuf, s
 
 int64_t lzbench_fsst_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
-    std::vector<string> data({string(inbuf, insize)});
+    size_t compressedLen;
+    unsigned char *start_ptr;
 
-    std::vector<unsigned long> compressedRowLens;
-    std::vector<unsigned char*> compressedRowPtrs;
-
-    compressedRowLens.resize(1);
-    compressedRowPtrs.resize(1 + 1);
 
     auto inbuf_ptr = reinterpret_cast<const unsigned char**>(const_cast<const char**>(&inbuf));
 
     auto encoder = fsst_create(1, &insize, inbuf_ptr, false);
-    std::vector<unsigned char> compressionBuffer;
-    compressionBuffer.resize(16 + 2 * insize);
-    fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(), compressionBuffer.data(), compressedRowLens.data(), compressedRowPtrs.data());
-    unsigned long compressedLen = data.empty() ? 0 : (compressedRowPtrs[0] + compressedRowLens[0] - compressionBuffer.data());
-
-    uint64_t result = compressedLen /*+ (offsets.size() * sizeof(unsigned))*/;
-
     unsigned char tmp[FSST_MAXHEADER];
     size_t hdr = fsst_export(encoder, tmp);
+
+    std::vector<unsigned char> compressionBuffer(16 + 2 * insize);
+    auto num_compressed = fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(), compressionBuffer.data(), &compressedLen, &start_ptr);
+
+    if (num_compressed < 1 || compressedLen > outsize) return -1;
+
     std::copy(tmp, tmp+hdr, outbuf);
     fsst_destroy(encoder);
-    result += hdr;
 
     memcpy(outbuf+hdr, compressionBuffer.data(), compressedLen);
-    printf("Length: %lu\n", compressedLen);
-    return result;
+    compressedLen += hdr;
+    return compressedLen;
 }
 
 int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char*)
