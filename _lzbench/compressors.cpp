@@ -594,6 +594,9 @@ int64_t lzbench_lzlib_decompress(char *inbuf, size_t insize, char *outbuf, size_
 #ifndef BENCH_REMOVE_LZMA
 
 #include <string.h>
+#include <chrono>
+#include <iostream>
+#include <fstream>
 #include "lzma/Alloc.h"
 #include "lzma/LzmaDec.h"
 #include "lzma/LzmaEnc.h"
@@ -1761,6 +1764,76 @@ int64_t lzbench_nakamichi_decompress(char *inbuf, size_t insize, char *outbuf, s
 }
 
 #endif
+
+
+#ifndef BENCH_REMOVE_FSST
+#include "fsst/fsst.h"
+
+#define FSST_DESERIALIZE(p) (((unsigned long long) (p)[0]) << 16) | (((unsigned long long) (p)[1]) << 8) | ((unsigned long long) (p)[2])
+#define FSST_SERIALIZE(l,p) { (p)[0] = ((l)>>16)&255; (p)[1] = ((l)>>8)&255; (p)[2] = (l)&255; }
+
+
+int64_t lzbench_fsst_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
+{
+    std::vector<string> data({string(inbuf, insize)});
+
+    std::vector<unsigned long> rowLens, compressedRowLens;
+    std::vector<const unsigned char*> rowPtrs;
+    std::vector<unsigned char*> compressedRowPtrs;
+
+    rowLens.reserve(data.size());
+    compressedRowLens.resize(data.size());
+    rowPtrs.reserve(data.size());
+    compressedRowPtrs.resize(data.size() + 1);
+    unsigned totalLen = 0;
+    for (auto& d : data) {
+        totalLen += d.size();
+        rowLens.push_back(d.size());
+        rowPtrs.push_back(reinterpret_cast<unsigned char*>(const_cast<char*>(d.data())));
+    }
+
+    auto startTime = std::chrono::steady_clock::now();
+    auto encoder = fsst_create(data.size(), rowLens.data(), rowPtrs.data(), false);
+    auto createTime = std::chrono::steady_clock::now();
+    std::vector<unsigned char> compressionBuffer;
+    compressionBuffer.resize(16 + 2 * totalLen);
+    auto compressTime = std::chrono::steady_clock::now();
+    fsst_compress(encoder, data.size(), rowLens.data(), rowPtrs.data(), compressionBuffer.size(), compressionBuffer.data(), compressedRowLens.data(), compressedRowPtrs.data());
+    auto stopTime = std::chrono::steady_clock::now();
+    unsigned long compressedLen = data.empty() ? 0 : (compressedRowPtrs[data.size() - 1] + compressedRowLens[data.size() - 1] - compressionBuffer.data());
+    uint64_t result = compressedLen /*+ (offsets.size() * sizeof(unsigned))*/;
+
+    unsigned char tmp[FSST_MAXHEADER];
+    size_t hdr = fsst_export(encoder, tmp);
+    std::copy(tmp, tmp+hdr, outbuf);
+    fsst_destroy(encoder);
+    result += hdr;
+
+    memcpy(outbuf+hdr, compressionBuffer.data(), compressedLen);
+    compressedRowPtrs[data.size()] = compressionBuffer.data() + compressedLen;
+
+    std::cout << "# symbol table construction time: " << std::chrono::duration<double>(createTime - startTime).count() << std::endl;
+    std::cout << "# compress time: " << std::chrono::duration<double>(stopTime - compressTime).count() << std::endl;
+    std::cout << "# size: " << result << std::endl;
+    return result;
+}
+
+int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char*)
+{
+    unsigned char *data = reinterpret_cast<unsigned char *>(inbuf);
+    fsst_decoder_t decoder;
+    size_t hdr = fsst_import(&decoder, data);
+
+    unsigned line = 0;
+    char* writer = outbuf;
+
+    unsigned len = fsst_decompress(&decoder, insize-hdr, data + hdr, outsize, reinterpret_cast<unsigned char*>(writer));
+    std::cout << "# len: " << len << " vs " << outsize << std::endl;
+
+    return len;
+}
+
+#endif // BENCH_REMOVE_FSST
 
 #ifdef BENCH_HAS_CUDA
 #include <cuda_runtime.h>

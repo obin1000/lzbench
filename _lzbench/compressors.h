@@ -496,6 +496,14 @@ int64_t lzbench_return_0(char *inbuf, size_t insize, char *outbuf, size_t outsiz
 	#define lzbench_nakamichi_decompress NULL
 #endif
 
+#ifndef BENCH_REMOVE_FSST
+   int64_t lzbench_fsst_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*);
+   int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char*);
+#else
+   #define lzbench_fsst_compress NULL
+	#define lzbench_fsst_decompress NULL
+#endif // BENCH_REMOVE_FSST
+
 #ifdef BENCH_HAS_CUDA
         char* lzbench_cuda_init(size_t insize, size_t, size_t);
         void lzbench_cuda_deinit(char* workmem);
