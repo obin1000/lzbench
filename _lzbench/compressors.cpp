@@ -1806,7 +1806,7 @@ int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t
 
 int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
-    const size_t block_size = level*1024;
+    const size_t block_size = (total_insize/level) + 1;
     std::vector<unsigned char> compressionBuffer(16 + 2 * block_size);
     size_t output_location = 0;
     size_t compressedLen;
@@ -1828,7 +1828,6 @@ int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, cha
         inbuf_ptr = reinterpret_cast<const unsigned char **>(const_cast<const char **>(&inbuf));
 
         auto encoder = fsst_create(1, &insize, inbuf_ptr, false);
-
         hdr = fsst_export(encoder, tmp);
 
         auto num_compressed = fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(),
@@ -1849,8 +1848,8 @@ int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, cha
 
         if ((total_insize - input_location) < block_size) break;
         input_location+=block_size;
-
     }
+
     return output_location;
 }
 
@@ -1875,6 +1874,7 @@ int64_t lzbench_fsst_decompress_blocks(char *inbuf, size_t total_insize, char *o
         output_location += size;
         input_location += block_size -3 -hdr;
     }
+
     return output_location;
 }
 #endif // BENCH_REMOVE_FSST
