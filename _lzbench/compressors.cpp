@@ -1765,9 +1765,10 @@ int64_t lzbench_nakamichi_decompress(char *inbuf, size_t insize, char *outbuf, s
 
 #ifndef BENCH_REMOVE_FSST
 #include "fsst/fsst.h"
-
-#define FSST_DESERIALIZE(p) (((unsigned long long) (p)[0]) << 16) | (((unsigned long long) (p)[1]) << 8) | ((unsigned long long) (p)[2])
-#define FSST_SERIALIZE(l,p) { (p)[0] = ((l)>>16)&255; (p)[1] = ((l)>>8)&255; (p)[2] = (l)&255; }
+#define FSST_BLOCK_FIELD_SIZE 4
+#define FSST_MAX_BLOCK_SIZE (((size_t)1)<<(8*FSST_BLOCK_FIELD_SIZE))
+#define FSST_DESERIALIZE(p) (((unsigned long long) (p)[0]) << 24) | (((unsigned long long) (p)[1]) << 16) | (((unsigned long long) (p)[2]) << 8) | ((unsigned long long) (p)[3] )
+#define FSST_SERIALIZE(l,p) { (p)[0] = ((l)>>24)&255; (p)[1] = ((l)>>16)&255; (p)[2] = ((l)>>8)&255; (p)[3] = (l)&255; }
 
 
 int64_t lzbench_fsst_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
@@ -1807,6 +1808,10 @@ int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t
 int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
     const size_t block_size = (total_insize/level) + 1;
+    if (block_size > FSST_MAX_BLOCK_SIZE) {
+        printf("block size %zu too big for file size (max %zu)\n", block_size, FSST_MAX_BLOCK_SIZE);
+        return -1;
+    }
     std::vector<unsigned char> compressionBuffer(16 + 2 * block_size);
     size_t output_location = 0;
     size_t compressedLen;
@@ -1835,9 +1840,9 @@ int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, cha
 
         if (num_compressed < 1) return -1;
 
-        FSST_SERIALIZE(compressedLen + hdr + 3,outbuf + output_location); // block starts with size
+        FSST_SERIALIZE(compressedLen + hdr + FSST_BLOCK_FIELD_SIZE,outbuf + output_location); // block starts with size
 
-        output_location += 3;
+        output_location += FSST_BLOCK_FIELD_SIZE;
 
         std::copy(tmp, tmp + hdr, outbuf + output_location);
         output_location += hdr;
@@ -1866,13 +1871,38 @@ int64_t lzbench_fsst_decompress_blocks(char *inbuf, size_t total_insize, char *o
     while (input_location < total_insize) {
         block_size = FSST_DESERIALIZE(data+input_location);
 
-        input_location +=3;
+        input_location += FSST_BLOCK_FIELD_SIZE;
 
         hdr = fsst_import(&decoder, data+input_location);
         input_location += hdr;
-        size = fsst_decompress(&decoder, block_size-3-hdr, data+input_location, outsize-output_location, reinterpret_cast<unsigned char*>(outbuf) + output_location);
+        size = fsst_decompress(&decoder, block_size-FSST_BLOCK_FIELD_SIZE-hdr, data+input_location, outsize-output_location, reinterpret_cast<unsigned char*>(outbuf) + output_location);
         output_location += size;
-        input_location += block_size -3 -hdr;
+        input_location += block_size -FSST_BLOCK_FIELD_SIZE -hdr;
+    }
+
+    return output_location;
+}
+
+int64_t lzbench_fsst_decompress_threads(char *inbuf, size_t total_insize, char *outbuf, size_t outsize, size_t, size_t, char*)
+{
+    auto data = reinterpret_cast<unsigned char *>(inbuf);
+    fsst_decoder_t decoder;
+    size_t hdr;
+    size_t input_location = 0;
+    size_t output_location = 0;
+    size_t block_size;
+    size_t size;
+
+    while (input_location < total_insize) {
+        block_size = FSST_DESERIALIZE(data+input_location);
+
+        input_location +=FSST_BLOCK_FIELD_SIZE;
+
+        hdr = fsst_import(&decoder, data+input_location);
+        input_location += hdr;
+        size = fsst_decompress(&decoder, block_size-FSST_BLOCK_FIELD_SIZE-hdr, data+input_location, outsize-output_location, reinterpret_cast<unsigned char*>(outbuf) + output_location);
+        output_location += size;
+        input_location += block_size -FSST_BLOCK_FIELD_SIZE -hdr;
     }
 
     return output_location;
