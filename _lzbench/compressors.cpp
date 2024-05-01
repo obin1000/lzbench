@@ -1765,6 +1765,7 @@ int64_t lzbench_nakamichi_decompress(char *inbuf, size_t insize, char *outbuf, s
 
 #ifndef BENCH_REMOVE_FSST
 #include "fsst/fsst.h"
+#include "fsst/fsstp.hpp"
 #define FSST_BLOCK_FIELD_SIZE 4
 #define FSST_MAX_BLOCK_SIZE (((size_t)1)<<(8*FSST_BLOCK_FIELD_SIZE))
 #define FSST_DESERIALIZE(p) (((unsigned long long) (p)[0]) << 24) | (((unsigned long long) (p)[1]) << 16) | (((unsigned long long) (p)[2]) << 8) | ((unsigned long long) (p)[3] )
@@ -1854,7 +1855,6 @@ int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, cha
         if ((total_insize - input_location) < block_size) break;
         input_location+=block_size;
     }
-
     return output_location;
 }
 
@@ -1883,30 +1883,18 @@ int64_t lzbench_fsst_decompress_blocks(char *inbuf, size_t total_insize, char *o
     return output_location;
 }
 
-int64_t lzbench_fsst_decompress_threads(char *inbuf, size_t total_insize, char *outbuf, size_t outsize, size_t, size_t, char*)
+int64_t lzbench_fsstp_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
-    auto data = reinterpret_cast<unsigned char *>(inbuf);
-    fsst_decoder_t decoder;
-    size_t hdr;
-    size_t input_location = 0;
-    size_t output_location = 0;
-    size_t block_size;
-    size_t size;
-
-    while (input_location < total_insize) {
-        block_size = FSST_DESERIALIZE(data+input_location);
-
-        input_location +=FSST_BLOCK_FIELD_SIZE;
-
-        hdr = fsst_import(&decoder, data+input_location);
-        input_location += hdr;
-        size = fsst_decompress(&decoder, block_size-FSST_BLOCK_FIELD_SIZE-hdr, data+input_location, outsize-output_location, reinterpret_cast<unsigned char*>(outbuf) + output_location);
-        output_location += size;
-        input_location += block_size -FSST_BLOCK_FIELD_SIZE -hdr;
-    }
-
-    return output_location;
+    // Create 1 block for each level/each thread
+    size_t block_size = (insize/level) + 1;
+    return compress_buffer(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), block_size);
 }
+
+int64_t lzbench_fsstp_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
+{
+    return decompress_buffer(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), level);
+}
+
 #endif // BENCH_REMOVE_FSST
 
 #ifdef BENCH_HAS_CUDA

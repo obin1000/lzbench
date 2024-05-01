@@ -327,7 +327,7 @@ pithy/pithy.o: pithy/pithy.cpp
 
 _lzbench/compressors.o: %.o : %.cpp
 	@$(MKDIR) $(dir $@)
-	$(CXX) $(CFLAGS) -std=c++11 $< -c -o $@
+	$(CXX) $(CFLAGS) -std=c++14 $< -c -o $@
 
 snappy/snappy-sinksource.o snappy/snappy-stubs-internal.o snappy/snappy.o: %.o : %.cc
 	@$(MKDIR) $(dir $@)
