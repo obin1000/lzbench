@@ -1885,8 +1885,12 @@ int64_t lzbench_fsst_decompress_blocks(char *inbuf, size_t total_insize, char *o
 
 int64_t lzbench_fsstp_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
-    // Create 1 block for each level/each thread
-    size_t block_size = (insize/level) + 1;
+    size_t max_block_size = (1UL<<25);
+	size_t number_of_blocks = 8192;
+    size_t block_size = (insize/number_of_blocks) + 1;
+	// if (block_size > max_block_size) {
+	// 	block_size = max_block_size;
+	// }
     return compress_buffer(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), block_size);
 }
 
