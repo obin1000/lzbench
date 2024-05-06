@@ -1766,6 +1766,10 @@ int64_t lzbench_nakamichi_decompress(char *inbuf, size_t insize, char *outbuf, s
 #ifndef BENCH_REMOVE_FSST
 #include "fsst/fsst.h"
 #include "fsst/fsstp.hpp"
+#include "fsst/fsstp_split_block.hpp"
+#include "fsst/fsstp_thread_per_block.hpp"
+
+
 #define FSST_BLOCK_FIELD_SIZE 4
 #define FSST_MAX_BLOCK_SIZE (((size_t)1)<<(8*FSST_BLOCK_FIELD_SIZE))
 #define FSST_DESERIALIZE(p) (((unsigned long long) (p)[0]) << 24) | (((unsigned long long) (p)[1]) << 16) | (((unsigned long long) (p)[2]) << 8) | ((unsigned long long) (p)[3] )
@@ -1777,19 +1781,18 @@ int64_t lzbench_fsst_compress(char *inbuf, size_t insize, char *outbuf, size_t o
     size_t compressedLen;
     unsigned char *start_ptr;
 
+    const auto inbuf_ptr = reinterpret_cast<const unsigned char**>(const_cast<const char**>(&inbuf));
 
-    auto inbuf_ptr = reinterpret_cast<const unsigned char**>(const_cast<const char**>(&inbuf));
-
-    auto encoder = fsst_create(1, &insize, inbuf_ptr, false);
+    const auto encoder = fsst_create(1, &insize, inbuf_ptr, false);
     unsigned char tmp[FSST_MAXHEADER];
-    size_t hdr = fsst_export(encoder, tmp);
+    const size_t hdr = fsst_export(encoder, tmp);
 
     std::vector<unsigned char> compressionBuffer(16 + 2 * insize);
-    auto num_compressed = fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(), compressionBuffer.data(), &compressedLen, &start_ptr);
+    const auto num_compressed = fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(), compressionBuffer.data(), &compressedLen, &start_ptr);
 
     if (num_compressed < 1 || compressedLen > outsize) return -1;
 
-    std::copy(tmp, tmp+hdr, outbuf);
+    std::copy_n(tmp, hdr, outbuf);
     fsst_destroy(encoder);
 
     memcpy(outbuf+hdr, compressionBuffer.data(), compressedLen);
@@ -1799,9 +1802,9 @@ int64_t lzbench_fsst_compress(char *inbuf, size_t insize, char *outbuf, size_t o
 
 int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char*)
 {
-    auto data = reinterpret_cast<unsigned char *>(inbuf);
+    const auto data = reinterpret_cast<unsigned char *>(inbuf);
     fsst_decoder_t decoder;
-    size_t hdr = fsst_import(&decoder, data);
+    const auto hdr = fsst_import(&decoder, data);
     return fsst_decompress(&decoder, insize-hdr, data + hdr, outsize, reinterpret_cast<unsigned char*>(outbuf));
 }
 
@@ -1817,26 +1820,25 @@ int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, cha
     size_t output_location = 0;
     size_t compressedLen;
     size_t insize;
-    char * inbuf;
-    size_t hdr;
-    unsigned char tmp[FSST_MAXHEADER];
     unsigned char *start_ptr;
-    const unsigned char ** inbuf_ptr;
     size_t input_location = 0;
+
     while (true) {
         if ((total_insize - input_location) < block_size) {
             insize = total_insize-input_location;
         } else {
             insize = block_size;
         }
-        inbuf = total_inbuf +input_location;
+        const auto inbuf = total_inbuf +input_location;
 
-        inbuf_ptr = reinterpret_cast<const unsigned char **>(const_cast<const char **>(&inbuf));
+        const auto inbuf_ptr = reinterpret_cast<const unsigned char **>(const_cast<const char **>(&inbuf));
 
-        auto encoder = fsst_create(1, &insize, inbuf_ptr, false);
-        hdr = fsst_export(encoder, tmp);
+        const auto encoder = fsst_create(1, &insize, inbuf_ptr, false);
 
-        auto num_compressed = fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(),
+    	unsigned char tmp[FSST_MAXHEADER];
+        const auto hdr = fsst_export(encoder, tmp);
+
+        const auto num_compressed = fsst_compress(encoder, 1, &insize, inbuf_ptr, compressionBuffer.size(),
                                             compressionBuffer.data(), &compressedLen, &start_ptr);
 
         if (num_compressed < 1) return -1;
@@ -1845,7 +1847,7 @@ int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, cha
 
         output_location += FSST_BLOCK_FIELD_SIZE;
 
-        std::copy(tmp, tmp + hdr, outbuf + output_location);
+        std::copy_n(tmp, hdr, outbuf + output_location);
         output_location += hdr;
         fsst_destroy(encoder);
 
@@ -1860,22 +1862,19 @@ int64_t lzbench_fsst_compress_blocks(char *total_inbuf, size_t total_insize, cha
 
 int64_t lzbench_fsst_decompress_blocks(char *inbuf, size_t total_insize, char *outbuf, size_t outsize, size_t, size_t, char*)
 {
-    auto data = reinterpret_cast<unsigned char *>(inbuf);
+    const auto data = reinterpret_cast<unsigned char *>(inbuf);
     fsst_decoder_t decoder;
-    size_t hdr;
     size_t input_location = 0;
     size_t output_location = 0;
-    size_t block_size;
-    size_t size;
 
     while (input_location < total_insize) {
-        block_size = FSST_DESERIALIZE(data+input_location);
+        const auto block_size = FSST_DESERIALIZE(data+input_location);
 
         input_location += FSST_BLOCK_FIELD_SIZE;
 
-        hdr = fsst_import(&decoder, data+input_location);
+        const auto hdr = fsst_import(&decoder, data+input_location);
         input_location += hdr;
-        size = fsst_decompress(&decoder, block_size-FSST_BLOCK_FIELD_SIZE-hdr, data+input_location, outsize-output_location, reinterpret_cast<unsigned char*>(outbuf) + output_location);
+        const auto size = fsst_decompress(&decoder, block_size-FSST_BLOCK_FIELD_SIZE-hdr, data+input_location, outsize-output_location, reinterpret_cast<unsigned char*>(outbuf) + output_location);
         output_location += size;
         input_location += block_size -FSST_BLOCK_FIELD_SIZE -hdr;
     }
@@ -1886,17 +1885,23 @@ int64_t lzbench_fsst_decompress_blocks(char *inbuf, size_t total_insize, char *o
 int64_t lzbench_fsstp_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
     size_t max_block_size = (1UL<<25);
-	size_t number_of_blocks = 8192;
-    size_t block_size = (insize/number_of_blocks) + 1;
+	const size_t number_of_blocks = 1024;
+    const size_t block_size = (insize/number_of_blocks) + 1;
 	// if (block_size > max_block_size) {
 	// 	block_size = max_block_size;
 	// }
     return compress_buffer(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), block_size);
 }
 
-int64_t lzbench_fsstp_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
+int64_t lzbench_fsstp_blocks_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
     return decompress_buffer(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), level);
+}
+
+int64_t lzbench_fsstp_tasks_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
+{
+	const auto splits = 1;
+	return decompress_buffer_tasks(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), level, splits);
 }
 
 #endif // BENCH_REMOVE_FSST

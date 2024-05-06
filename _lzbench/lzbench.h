@@ -136,7 +136,7 @@ typedef struct
 
 
 
-#define LZBENCH_COMPRESSOR_COUNT 75
+#define LZBENCH_COMPRESSOR_COUNT 76
 
 static const compressor_desc_t comp_desc[LZBENCH_COMPRESSOR_COUNT] =
 {
@@ -154,8 +154,9 @@ static const compressor_desc_t comp_desc[LZBENCH_COMPRESSOR_COUNT] =
     { "fastlzma2",   "1.0.1",      1,  10,    0,       0, lzbench_fastlzma2_compress,  lzbench_fastlzma2_decompress,  NULL,                    NULL },
     { "fsst",       "2024-04-09",  0,   0,    0,       0, lzbench_fsst_compress,       lzbench_fsst_decompress,       NULL,                    NULL },
     { "fsst-blocks","2024-04-09",  1,  16,    0,       0, lzbench_fsst_compress_blocks,lzbench_fsst_decompress_blocks,NULL,                    NULL },
-    { "fsstp",      "2024-04-09",  1,  16,    0,       0, lzbench_fsstp_compress,      lzbench_fsstp_decompress,      NULL,                    NULL },
-    { "gipfeli",    "2016-07-13",  0,   0,    0,       0, lzbench_gipfeli_compress,    lzbench_gipfeli_decompress,    NULL,                    NULL },
+    { "fsstp-blocks","2024-04-09", 1,  16,    0,       0, lzbench_fsstp_compress,      lzbench_fsstp_blocks_decompress,NULL,                   NULL },
+    { "fsstp-tasks","2024-04-09",  1,  16,    0,       0, lzbench_fsstp_compress,      lzbench_fsstp_tasks_decompress,NULL,                    NULL },
+	{ "gipfeli",    "2016-07-13",  0,   0,    0,       0, lzbench_gipfeli_compress,    lzbench_gipfeli_decompress,    NULL,                    NULL },
     { "glza",       "0.8",         0,   0,    0,       0, lzbench_glza_compress,       lzbench_glza_decompress,       NULL,                    NULL },
     { "libdeflate", "1.9",         1,  12,    0,       0, lzbench_libdeflate_compress, lzbench_libdeflate_decompress, NULL,                    NULL },
     { "lz4",        "1.9.3",       0,   0,    0,       0, lzbench_lz4_compress,        lzbench_lz4_decompress,        NULL,                    NULL },
