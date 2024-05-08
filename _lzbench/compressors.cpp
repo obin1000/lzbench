@@ -1768,7 +1768,7 @@ int64_t lzbench_nakamichi_decompress(char *inbuf, size_t insize, char *outbuf, s
 #include "fsst/fsstp.hpp"
 #include "fsst/fsstp_split_block.hpp"
 #include "fsst/fsstp_thread_per_block.hpp"
-
+#include "fsst/fsstp_no_queues.hpp"
 
 #define FSST_BLOCK_FIELD_SIZE 4
 #define FSST_MAX_BLOCK_SIZE (((size_t)1)<<(8*FSST_BLOCK_FIELD_SIZE))
@@ -1802,6 +1802,7 @@ int64_t lzbench_fsst_compress(char *inbuf, size_t insize, char *outbuf, size_t o
 
 int64_t lzbench_fsst_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t, size_t, char*)
 {
+
     const auto data = reinterpret_cast<unsigned char *>(inbuf);
     fsst_decoder_t decoder;
     const auto hdr = fsst_import(&decoder, data);
@@ -1895,6 +1896,8 @@ int64_t lzbench_fsstp_compress(char *inbuf, size_t insize, char *outbuf, size_t 
 
 int64_t lzbench_fsstp_blocks_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
 {
+
+
     return decompress_buffer(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), level);
 }
 
@@ -1902,6 +1905,11 @@ int64_t lzbench_fsstp_tasks_decompress(char *inbuf, size_t insize, char *outbuf,
 {
 	const auto splits = 1;
 	return decompress_buffer_tasks(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), level, splits);
+}
+
+int64_t lzbench_fsstp_noqueue_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, size_t level, size_t, char*)
+{
+	return noqueue::decompress_buffer(reinterpret_cast<unsigned char *>(inbuf), insize, reinterpret_cast<unsigned char *>(outbuf), level);
 }
 
 #endif // BENCH_REMOVE_FSST
