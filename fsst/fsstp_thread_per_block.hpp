@@ -106,33 +106,48 @@ inline size_t combine_given_distance(atomic_queue::AtomicQueue2<fsst_block_locat
  * @param src Compressed input data
  * @param input_size Length of the compressed inpupt data
  * @param dst Output buffer TODO: Check length
- * @param number_of_threads Number of decompression threads
+ * @param num_decomp_threads Number of decompression threads
  * @return
  */
-inline size_t decompress_buffer(unsigned char *src, size_t input_size, unsigned char *dst, const size_t number_of_threads){
-    std::vector<std::thread> threads(number_of_threads);
+inline size_t decompress_buffer(unsigned char *src, size_t input_size, unsigned char *dst, const unsigned int num_decomp_threads){
+    const auto num_write_threads = std::max(num_decomp_threads/2, 1U);
+    std::vector<std::future<size_t>> write_threads(num_write_threads);
+    std::vector<std::thread> decomp_threads(num_decomp_threads);
+
     atomic_queue::AtomicQueue2<fsst_block_location, QUEUE_SIZE> blocks_queue;
     atomic_queue::AtomicQueue2<fsst_block_location, QUEUE_SIZE> write_queue;
 
     std::thread readerThread([&src, &input_size, &blocks_queue]{ read_blocks(src, input_size, &blocks_queue); });
 
-    for (unsigned int thread_num = 0 ; thread_num < number_of_threads; thread_num++) {
-        threads[thread_num] = std::thread([&blocks_queue, &write_queue]{ decompress_thread(&blocks_queue, &write_queue); });
+    for (unsigned int thread_num = 0 ; thread_num < num_decomp_threads; thread_num++) {
+        decomp_threads[thread_num] = std::thread([&blocks_queue, &write_queue]{ decompress_thread(&blocks_queue, &write_queue); });
     }
-    auto dst_size_future = std::async([&write_queue, &dst]() { return combine_given_distance(&write_queue, dst); });
+
+    for (unsigned int thread_num = 0 ; thread_num < num_write_threads; thread_num++) {
+        write_threads[thread_num] = std::async([&write_queue, &dst]() { return combine_given_distance(&write_queue, dst); });
+    }
 
     readerThread.join();
 
-    for (auto &decomp_thread : threads) {
+    // Stop decompression threads
+    for (auto &decomp_thread : decomp_threads) {
         blocks_queue.push(fsst_block_location{.data_len = 0});
     }
 
-    for (auto &decomp_thread : threads) {
+    for (auto &decomp_thread : decomp_threads) {
         decomp_thread.join();
     }
 
-    write_queue.push(fsst_block_location{.data_len = 0});
-    return dst_size_future.get();
+    // Stop writing threads
+    for (auto &write_thread : write_threads) {
+        write_queue.push(fsst_block_location{.data_len = 0});
+    }
+    size_t total_size = 0;
+    for (auto &write_thread : write_threads) {
+        total_size += write_thread.get();
+    }
+
+    return total_size;
 }
 
 
